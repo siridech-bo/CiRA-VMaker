@@ -5,6 +5,16 @@ export interface Voice {
   gender: 'male' | 'female' | 'neutral'
 }
 
+/**
+ * Word timing for subtitle synchronization
+ * Represents 1-2 words with their start/end times
+ */
+export interface WordTiming {
+  text: string      // The word(s) to display
+  startTime: number // Start time in milliseconds
+  endTime: number   // End time in milliseconds
+}
+
 export type TTSModelStatus = 'unloaded' | 'loading' | 'ready' | 'error'
 export type TTSDeviceType = 'webgpu' | 'wasm' | 'cpu' | 'server'
 export type TTSLanguage = 'en' | 'th'

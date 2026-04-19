@@ -5,7 +5,7 @@
  * Falls back to client-side eSpeak if server is unavailable.
  */
 
-import type { Voice } from '@/types'
+import type { Voice, WordTiming } from '@/types'
 
 const API_BASE = '/api/tts'
 
@@ -107,6 +107,57 @@ export async function synthesizeWithEdgeTTS(
   return {
     audioBlob,
     duration
+  }
+}
+
+/**
+ * Synthesize text for a slide using Edge TTS server (with word timing for subtitles)
+ */
+export async function synthesizeSlideWithEdgeTTS(
+  slideId: string,
+  text: string,
+  voiceId: string = 'th-TH-PremwadeeNeural',
+  speed: number = 1.0
+): Promise<{ audioBlob: Blob; duration: number; timings: WordTiming[] }> {
+  console.log(`[Edge TTS] Generating slide ${slideId}: "${text.substring(0, 50)}..."`)
+
+  const response = await fetch(`${API_BASE}/generate-slide`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      slideId,
+      text,
+      voice: voiceId,
+      speed
+    })
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    let errorMessage = `Server error: ${response.status}`
+    try {
+      const errorData = JSON.parse(errorText)
+      errorMessage = errorData.message || errorMessage
+    } catch {
+      // Response wasn't JSON
+    }
+    throw new Error(errorMessage)
+  }
+
+  const data = await response.json()
+
+  // Convert base64 audio to blob
+  const audioBytes = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))
+  const audioBlob = new Blob([audioBytes], { type: data.mimeType || 'audio/mpeg' })
+
+  console.log(`[Edge TTS] Slide ${slideId}: ${data.duration.toFixed(2)}s, ${data.timings?.length || 0} timing entries`)
+
+  return {
+    audioBlob,
+    duration: data.duration,
+    timings: data.timings || []
   }
 }
 

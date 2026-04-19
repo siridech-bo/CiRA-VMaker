@@ -12,11 +12,11 @@ import {
 } from '@/services/espeakTTS'
 import {
   checkServerAvailable,
-  synthesizeWithEdgeTTS,
+  synthesizeSlideWithEdgeTTS,
   EDGE_THAI_VOICES,
   isServerAvailable
 } from '@/services/edgeTTS'
-import type { TTSWorkerMessage, TTSWorkerResponse, TTSEngine, TTSLanguage } from '@/types'
+import type { TTSWorkerMessage, TTSWorkerResponse, TTSEngine, TTSLanguage, WordTiming } from '@/types'
 import { ENGINE_FOR_LANGUAGE } from '@/types'
 
 // Worker for Kokoro engine only
@@ -126,7 +126,7 @@ export function useTTS() {
     }
   }
 
-  async function handleAudioGenerated(slideId: string, blob: Blob, duration: number) {
+  async function handleAudioGenerated(slideId: string, blob: Blob, duration: number, timings?: WordTiming[]) {
     const projectId = projectStore.project?.id ?? 'default'
 
     // Apply audio post-processing if enabled
@@ -144,7 +144,8 @@ export function useTTS() {
       }
     }
 
-    await blobStorage.storeAudio(slideId, processedBlob, duration, projectId)
+    // Store audio with optional timing data for subtitles
+    await blobStorage.storeAudio(slideId, processedBlob, duration, projectId, timings)
     projectStore.markAudioGenerated(slideId, duration)
   }
 
@@ -290,26 +291,35 @@ export function useTTS() {
     } else {
       // Thai TTS
       try {
-        let result: { audioBlob: Blob; duration: number }
+        let audioBlob: Blob
+        let duration: number
+        let timings: WordTiming[] | undefined
 
         if (useEdgeTTS && isServerAvailable()) {
-          // Try Edge TTS first
+          // Try Edge TTS first (with timing data for subtitles)
           try {
             const voiceId = ttsStore.selectedVoice ?? 'th-TH-PremwadeeNeural'
-            result = await synthesizeWithEdgeTTS(cleanText, voiceId, ttsStore.speed)
+            const result = await synthesizeSlideWithEdgeTTS(slideId, cleanText, voiceId, ttsStore.speed)
+            audioBlob = result.audioBlob
+            duration = result.duration
+            timings = result.timings
           } catch (edgeError) {
             console.warn('[Thai TTS] Edge TTS failed, trying eSpeak fallback:', edgeError)
-            // Fall back to eSpeak
+            // Fall back to eSpeak (no timing data)
             const voiceId = 'th'
-            result = await espeakSynthesize(cleanText, voiceId, ttsStore.speed)
+            const result = await espeakSynthesize(cleanText, voiceId, ttsStore.speed)
+            audioBlob = result.audioBlob
+            duration = result.duration
           }
         } else {
-          // Use eSpeak directly
+          // Use eSpeak directly (no timing data)
           const voiceId = ttsStore.selectedVoice ?? 'th'
-          result = await espeakSynthesize(cleanText, voiceId, ttsStore.speed)
+          const result = await espeakSynthesize(cleanText, voiceId, ttsStore.speed)
+          audioBlob = result.audioBlob
+          duration = result.duration
         }
 
-        await handleAudioGenerated(slideId, result.audioBlob, result.duration)
+        await handleAudioGenerated(slideId, audioBlob, duration, timings)
         ttsStore.stopGenerating()
       } catch (error) {
         ttsStore.setError(error instanceof Error ? error.message : 'Failed to generate Thai audio')

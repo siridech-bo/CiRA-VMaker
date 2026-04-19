@@ -1,4 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb'
+import type { WordTiming } from '@/types/tts'
 
 const DB_NAME = 'cira-vmaker'
 const DB_VERSION = 1
@@ -10,6 +11,7 @@ interface AudioRecord {
   projectId: string
   blob: Blob
   duration: number
+  timings?: WordTiming[]  // Word timing for subtitles
   createdAt: Date
 }
 
@@ -44,7 +46,8 @@ export const blobStorage = {
     slideId: string,
     blob: Blob,
     duration: number,
-    projectId: string = 'default'
+    projectId: string = 'default',
+    timings?: WordTiming[]
   ): Promise<void> {
     const db = await getDB()
     const record: AudioRecord = {
@@ -52,6 +55,7 @@ export const blobStorage = {
       projectId,
       blob,
       duration,
+      timings,
       createdAt: new Date()
     }
     await db.put(AUDIO_STORE, record)
@@ -63,11 +67,11 @@ export const blobStorage = {
     return record?.blob ?? null
   },
 
-  async getAudioWithDuration(slideId: string): Promise<{ blob: Blob; duration: number } | null> {
+  async getAudioWithDuration(slideId: string): Promise<{ blob: Blob; duration: number; timings?: WordTiming[] } | null> {
     const db = await getDB()
     const record = await db.get(AUDIO_STORE, slideId)
     if (!record) return null
-    return { blob: record.blob, duration: record.duration }
+    return { blob: record.blob, duration: record.duration, timings: record.timings }
   },
 
   async deleteAudio(slideId: string): Promise<void> {

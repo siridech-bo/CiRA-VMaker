@@ -7,6 +7,23 @@ import { randomUUID } from 'crypto'
 
 const router = Router()
 
+/**
+ * Word timing for subtitle synchronization
+ */
+interface WordTiming {
+  text: string      // The word(s) to display
+  startTime: number // Start time in milliseconds
+  endTime: number   // End time in milliseconds
+}
+
+/**
+ * TTS generation result with audio and timing
+ */
+interface TTSResult {
+  audio: Buffer
+  timings: WordTiming[]
+}
+
 // Available Thai voices from Edge TTS
 const THAI_VOICES = [
   {
@@ -34,28 +51,178 @@ router.get('/voices', (_req: Request, res: Response) => {
 })
 
 /**
- * Generate audio using Python edge-tts CLI
+ * Parse VTT timestamp to milliseconds
+ * Format: HH:MM:SS.mmm or MM:SS.mmm
+ */
+function parseVTTTimestamp(timestamp: string): number {
+  const parts = timestamp.trim().split(':')
+  let hours = 0, minutes = 0, seconds = 0
+
+  if (parts.length === 3) {
+    hours = parseInt(parts[0], 10)
+    minutes = parseInt(parts[1], 10)
+    seconds = parseFloat(parts[2])
+  } else if (parts.length === 2) {
+    minutes = parseInt(parts[0], 10)
+    seconds = parseFloat(parts[1])
+  }
+
+  return Math.round((hours * 3600 + minutes * 60 + seconds) * 1000)
+}
+
+/**
+ * Check if text is primarily Thai (contains Thai characters)
+ */
+function isThaiText(text: string): boolean {
+  const thaiPattern = /[\u0E00-\u0E7F]/
+  return thaiPattern.test(text)
+}
+
+/**
+ * Split Thai text into word-like chunks (2-4 characters each)
+ * Thai doesn't have spaces, so we approximate word boundaries
+ */
+function splitThaiText(text: string): string[] {
+  const words: string[] = []
+  let currentWord = ''
+
+  for (const char of text) {
+    currentWord += char
+
+    // Split after 2-4 characters, preferring to split after certain characters
+    // Thai vowels that typically end syllables: ะ า ิ ี ึ ื ุ ู เ แ โ ใ ไ
+    const isVowelEnding = /[ะาิีึืุูเแโใไ]/.test(char)
+    const isToneOrSpecial = /[่้๊๋์]/.test(char)
+
+    if (currentWord.length >= 4 || (currentWord.length >= 2 && isVowelEnding && !isToneOrSpecial)) {
+      words.push(currentWord)
+      currentWord = ''
+    }
+  }
+
+  if (currentWord) {
+    words.push(currentWord)
+  }
+
+  return words
+}
+
+/**
+ * Split text into 1-2 word chunks with interpolated timing
+ */
+function splitIntoWordChunks(text: string, startTime: number, endTime: number): WordTiming[] {
+  const duration = endTime - startTime
+  const chunks: WordTiming[] = []
+
+  let words: string[]
+
+  if (isThaiText(text)) {
+    // For Thai text, use character-based splitting
+    words = splitThaiText(text.trim())
+  } else {
+    // For other languages, split on whitespace
+    words = text.trim().split(/\s+/).filter(w => w.length > 0)
+  }
+
+  if (words.length === 0) return []
+
+  // Group into 1-2 word chunks
+  const wordChunks: string[] = []
+  for (let i = 0; i < words.length; i += 2) {
+    if (i + 1 < words.length) {
+      wordChunks.push(words[i] + (isThaiText(text) ? '' : ' ') + words[i + 1])
+    } else {
+      wordChunks.push(words[i])
+    }
+  }
+
+  // Distribute timing evenly across chunks
+  const timePerChunk = duration / wordChunks.length
+
+  for (let i = 0; i < wordChunks.length; i++) {
+    chunks.push({
+      text: wordChunks[i],
+      startTime: Math.round(startTime + i * timePerChunk),
+      endTime: Math.round(startTime + (i + 1) * timePerChunk)
+    })
+  }
+
+  return chunks
+}
+
+/**
+ * Parse VTT subtitle file content into word timings
+ */
+function parseVTT(vttContent: string): WordTiming[] {
+  const timings: WordTiming[] = []
+  const lines = vttContent.split('\n')
+
+  let i = 0
+  // Skip WEBVTT header
+  while (i < lines.length && !lines[i].includes('-->')) {
+    i++
+  }
+
+  while (i < lines.length) {
+    const line = lines[i].trim()
+
+    // Look for timestamp line (contains -->)
+    if (line.includes('-->')) {
+      const [startStr, endStr] = line.split('-->')
+      const startTime = parseVTTTimestamp(startStr)
+      const endTime = parseVTTTimestamp(endStr)
+
+      // Collect all text lines until empty line or next timestamp
+      const textLines: string[] = []
+      i++
+      while (i < lines.length && lines[i].trim() && !lines[i].includes('-->')) {
+        // Skip cue numbers
+        if (!/^\d+$/.test(lines[i].trim())) {
+          textLines.push(lines[i].trim())
+        }
+        i++
+      }
+
+      const text = textLines.join(' ')
+      if (text) {
+        // Split this phrase into word chunks
+        const chunks = splitIntoWordChunks(text, startTime, endTime)
+        timings.push(...chunks)
+      }
+    } else {
+      i++
+    }
+  }
+
+  return timings
+}
+
+/**
+ * Generate audio using Python edge-tts CLI with subtitle timing
  * Uses file-based text input to avoid Unicode encoding issues
  */
 async function generateWithEdgeTTS(
   text: string,
   voice: string,
   rate: string
-): Promise<Buffer> {
+): Promise<TTSResult> {
   const uuid = randomUUID()
   const tempTextFile = join(tmpdir(), `tts-text-${uuid}.txt`)
   const tempAudioFile = join(tmpdir(), `tts-audio-${uuid}.mp3`)
+  const tempSubtitleFile = join(tmpdir(), `tts-subs-${uuid}.vtt`)
 
   // Write text to temp file to avoid command line encoding issues
   await fs.writeFile(tempTextFile, text, 'utf-8')
 
   return new Promise((resolve, reject) => {
     // Use --rate=VALUE format to avoid issues with negative values like -10%
+    // Add --write-subtitles to get timing information
     const args = [
       '--voice', voice,
       `--rate=${rate}`,
       '--file', tempTextFile,
-      '--write-media', tempAudioFile
+      '--write-media', tempAudioFile,
+      '--write-subtitles', tempSubtitleFile
     ]
 
     console.log(`[TTS] Running edge-tts: voice=${voice}, rate=${rate}, text="${text.substring(0, 30)}..."`)
@@ -76,14 +243,29 @@ async function generateWithEdgeTTS(
 
       if (code !== 0) {
         await fs.unlink(tempAudioFile).catch(() => {})
+        await fs.unlink(tempSubtitleFile).catch(() => {})
         reject(new Error(`edge-tts failed with code ${code}: ${stderr}`))
         return
       }
 
       try {
         const audioBuffer = await fs.readFile(tempAudioFile)
-        await fs.unlink(tempAudioFile).catch(() => {}) // Clean up audio file
-        resolve(audioBuffer)
+
+        // Try to read and parse subtitles
+        let timings: WordTiming[] = []
+        try {
+          const vttContent = await fs.readFile(tempSubtitleFile, 'utf-8')
+          timings = parseVTT(vttContent)
+          console.log(`[TTS] Parsed ${timings.length} word timing entries`)
+        } catch (subErr) {
+          console.warn(`[TTS] Could not parse subtitles: ${subErr}`)
+        }
+
+        // Clean up files
+        await fs.unlink(tempAudioFile).catch(() => {})
+        await fs.unlink(tempSubtitleFile).catch(() => {})
+
+        resolve({ audio: audioBuffer, timings })
       } catch (err) {
         reject(new Error(`Failed to read audio file: ${err}`))
       }
@@ -99,6 +281,7 @@ async function generateWithEdgeTTS(
 /**
  * POST /api/tts/generate
  * Generate audio from text using Edge TTS
+ * Returns audio as binary stream (legacy endpoint)
  */
 router.post('/generate', async (req: Request, res: Response) => {
   try {
@@ -120,16 +303,16 @@ router.post('/generate', async (req: Request, res: Response) => {
 
     console.log(`[TTS] Generating: "${text.substring(0, 50)}..." voice=${voiceName}`)
 
-    const audioBuffer = await generateWithEdgeTTS(text, voiceName, rateStr)
+    const result = await generateWithEdgeTTS(text, voiceName, rateStr)
 
-    console.log(`[TTS] Generated ${audioBuffer.length} bytes`)
+    console.log(`[TTS] Generated ${result.audio.length} bytes, ${result.timings.length} timing entries`)
 
     res.set({
       'Content-Type': 'audio/mpeg',
-      'Content-Length': audioBuffer.length,
+      'Content-Length': result.audio.length,
       'Cache-Control': 'no-cache'
     })
-    res.send(audioBuffer)
+    res.send(result.audio)
   } catch (error) {
     console.error('[TTS] Generation failed:', error)
     res.status(500).json({
@@ -141,7 +324,7 @@ router.post('/generate', async (req: Request, res: Response) => {
 
 /**
  * POST /api/tts/generate-slide
- * Generate audio for a slide (with slide ID tracking)
+ * Generate audio for a slide (with slide ID tracking and word timings)
  */
 router.post('/generate-slide', async (req: Request, res: Response) => {
   try {
@@ -161,17 +344,18 @@ router.post('/generate-slide', async (req: Request, res: Response) => {
 
     console.log(`[TTS] Slide ${slideId}: "${text.substring(0, 30)}..." voice=${voiceName}`)
 
-    const audioBuffer = await generateWithEdgeTTS(text, voiceName, rateStr)
-    const duration = estimateAudioDuration(audioBuffer.length)
+    const result = await generateWithEdgeTTS(text, voiceName, rateStr)
+    const duration = estimateAudioDuration(result.audio.length)
 
-    console.log(`[TTS] Slide ${slideId}: ${audioBuffer.length} bytes, ~${duration.toFixed(2)}s`)
+    console.log(`[TTS] Slide ${slideId}: ${result.audio.length} bytes, ~${duration.toFixed(2)}s, ${result.timings.length} timing entries`)
 
     res.json({
       slideId,
-      audio: audioBuffer.toString('base64'),
+      audio: result.audio.toString('base64'),
       mimeType: 'audio/mpeg',
       duration,
-      size: audioBuffer.length
+      size: result.audio.length,
+      timings: result.timings
     })
   } catch (error) {
     console.error('[TTS] Slide generation failed:', error)

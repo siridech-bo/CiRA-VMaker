@@ -7,6 +7,7 @@ export interface RenderSettings {
   videoBitrate: number
   audioBitrate: number
   format: 'mp4' | 'webm'
+  showSubtitles: boolean
 }
 
 export interface RenderProgress {
@@ -31,5 +32,6 @@ export const DEFAULT_RENDER_SETTINGS: RenderSettings = {
   fps: 30,
   videoBitrate: 5000000,
   audioBitrate: 128000,
-  format: 'mp4'
+  format: 'mp4',
+  showSubtitles: true
 }

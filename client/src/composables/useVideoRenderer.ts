@@ -2,7 +2,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { useRenderStore } from '@/stores/renderStore'
 import { blobStorage } from '@/services/blobStorage'
 import { parsePointerMarkers, calculateMarkerTimings, getPointerStateAtTime } from '@/utils/pointerParser'
-import type { PointerMarker, PointerStyle } from '@/types'
+import type { PointerMarker, PointerStyle, WordTiming } from '@/types'
 
 let isRendering = false
 let shouldCancel = false
@@ -58,6 +58,7 @@ export function useVideoRenderer() {
         startTime: number
         caption: string
         pointerMarkers: Array<PointerMarker & { startTime: number }>
+        subtitleTimings: WordTiming[]
       }> = []
 
       for (let i = 0; i < slides.length; i++) {
@@ -79,7 +80,8 @@ export function useVideoRenderer() {
           duration: audioData.duration,
           startTime: 0,
           caption: slide.caption || '',
-          pointerMarkers: []  // Will be calculated after we know the duration
+          pointerMarkers: [],  // Will be calculated after we know the duration
+          subtitleTimings: audioData.timings || []
         })
       }
 
@@ -274,6 +276,15 @@ export function useVideoRenderer() {
             drawPointer(ctx, pointerState.currentX, pointerState.currentY, pointerState.style, width, height)
           } else if (pointerInfo && !pointerInfo.visible) {
             pointerState.visible = false
+          }
+        }
+
+        // Draw subtitle if timing data is available
+        if (slide.subtitleTimings.length > 0 && renderStore.settings.showSubtitles !== false) {
+          const slideElapsedMs = slideElapsedTime * 1000
+          const subtitleText = getCurrentSubtitle(slide.subtitleTimings, slideElapsedMs)
+          if (subtitleText) {
+            drawSubtitle(ctx, subtitleText, width, height)
           }
         }
 
@@ -476,6 +487,54 @@ export function useVideoRenderer() {
     }
 
     ctx.restore()
+  }
+
+  /**
+   * Draw subtitle text at bottom center of canvas
+   * White text with black outline for readability
+   */
+  function drawSubtitle(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    canvasWidth: number,
+    canvasHeight: number
+  ) {
+    if (!text) return
+
+    ctx.save()
+
+    // Scale font size based on canvas resolution (~48px at 1080p)
+    const fontSize = Math.round(canvasHeight * 0.045)
+    ctx.font = `bold ${fontSize}px "Noto Sans Thai", "Sarabun", sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+
+    const x = canvasWidth / 2
+    const y = canvasHeight - Math.round(canvasHeight * 0.06) // ~60px from bottom at 1080p
+
+    // Black outline for readability
+    ctx.strokeStyle = 'black'
+    ctx.lineWidth = Math.round(fontSize / 10) // ~5px at 48px font
+    ctx.lineJoin = 'round'
+    ctx.strokeText(text, x, y)
+
+    // White fill
+    ctx.fillStyle = 'white'
+    ctx.fillText(text, x, y)
+
+    ctx.restore()
+  }
+
+  /**
+   * Find the current subtitle text based on elapsed time
+   */
+  function getCurrentSubtitle(timings: WordTiming[], elapsedTimeMs: number): string {
+    for (const timing of timings) {
+      if (elapsedTimeMs >= timing.startTime && elapsedTimeMs < timing.endTime) {
+        return timing.text
+      }
+    }
+    return ''
   }
 
   function easeOutCubic(t: number): number {

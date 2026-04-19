@@ -32,6 +32,11 @@ const format = computed({
   get: () => renderStore.settings.format,
   set: (value: 'mp4' | 'webm') => renderStore.updateSettings({ format: value })
 })
+
+const showSubtitles = computed({
+  get: () => renderStore.settings.showSubtitles,
+  set: (value: boolean) => renderStore.updateSettings({ showSubtitles: value })
+})
 </script>
 
 <template>
@@ -79,6 +84,22 @@ const format = computed({
       <p class="text-xs text-dark-500 mt-1">
         MP4 recommended for wider compatibility
       </p>
+    </div>
+
+    <div>
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          v-model="showSubtitles"
+          class="w-5 h-5 rounded border-dark-600 bg-dark-700 text-primary-500 focus:ring-primary-500 focus:ring-offset-dark-800"
+        />
+        <div>
+          <span class="text-sm font-medium text-dark-200">Show Subtitles</span>
+          <p class="text-xs text-dark-500">
+            Display word-by-word text synchronized with speech
+          </p>
+        </div>
+      </label>
     </div>
   </div>
 </template>
