@@ -1,0 +1,54 @@
+===================================
+CiRA VMaker - English Narration Prompt Template
+===================================
+
+Use this template with AI assistants (ChatGPT, Claude, etc.) to generate narration scripts for your slides.
+
+-----------------------------------
+PROMPT:
+-----------------------------------
+
+I have a presentation with [NUMBER] slides. Please generate professional English narration scripts for each slide.
+
+**Slide Content:**
+[Paste your slide content here - you can describe each slide or paste the text from each slide]
+
+**Requirements:**
+1. Write conversational, engaging narration (not just reading bullet points)
+2. Each slide narration should be 30-60 seconds when spoken
+3. Use clear, professional language
+4. Add transitions between slides (e.g., "Now let's look at...", "Moving on to...")
+5. Include pointer markers where visual attention is needed using this format:
+   {@X,Y:style} where X,Y are percentages (0-100) and style is: laser, circle, arrow, spotlight, or hand
+   Example: {@50,30:circle} This is the main concept we'll explore.
+
+**Output Format:**
+Return the narration for each slide in this format:
+
+SLIDE 1:
+[Narration text with optional pointer markers]
+
+SLIDE 2:
+[Narration text with optional pointer markers]
+
+(Continue for all slides)
+
+-----------------------------------
+EXAMPLE OUTPUT:
+-----------------------------------
+
+SLIDE 1:
+Welcome to today's presentation on machine learning fundamentals. {@50,50:circle} At the center of our discussion is how computers can learn from data without being explicitly programmed.
+
+SLIDE 2:
+{@30,40:arrow} Let's start with supervised learning, one of the most common approaches. {@70,60:laser} Here you can see how the model learns from labeled examples to make predictions on new data.
+
+-----------------------------------
+TIPS:
+-----------------------------------
+
+1. Keep sentences concise - they're easier to follow when spoken
+2. Avoid jargon unless your audience is technical
+3. Use pointer markers sparingly - 1-3 per slide is usually enough
+4. Write as if you're explaining to a colleague, not reading a textbook
+5. Include brief pauses by using shorter sentences

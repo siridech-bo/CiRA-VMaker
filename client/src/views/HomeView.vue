@@ -29,6 +29,16 @@ async function handleSlidesUploaded(slides: Slide[]) {
 function handleUploadError(error: string) {
   uploadError.value = error
 }
+
+function downloadTemplate(lang: 'en' | 'th') {
+  const filename = lang === 'en' ? 'prompt-template-en.txt' : 'prompt-template-th.txt'
+  const link = document.createElement('a')
+  link.href = `/templates/${filename}`
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 </script>
 
 <template>
@@ -103,6 +113,36 @@ function handleUploadError(error: string) {
           </div>
           <h3 class="font-medium text-dark-200">Export</h3>
           <p class="text-xs text-dark-400 mt-1">Download MP4 video</p>
+        </div>
+      </div>
+
+      <!-- Prompt Templates Download -->
+      <div class="pt-6 border-t border-dark-700">
+        <div class="text-center mb-4">
+          <h3 class="text-sm font-medium text-dark-300">Prompt Templates</h3>
+          <p class="text-xs text-dark-500 mt-1">
+            Download templates to generate narration scripts with AI assistants
+          </p>
+        </div>
+        <div class="flex justify-center gap-3">
+          <button
+            @click="downloadTemplate('en')"
+            class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="text-sm text-dark-200">English Template</span>
+          </button>
+          <button
+            @click="downloadTemplate('th')"
+            class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
+          >
+            <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="text-sm text-dark-200">Thai Template</span>
+          </button>
         </div>
       </div>
 
