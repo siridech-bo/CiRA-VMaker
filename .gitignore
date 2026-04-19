@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Uploaded files (server)
+server/uploads/*
+!server/uploads/.gitkeep
+server/output/*
+!server/output/.gitkeep
+
+# Test coverage
+coverage/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ML Models (large binary files)
+models/
+scripts/mms-tts-tha-onnx/
+client/public/models/
+
+# Test/temp files
+*.mp3
+nul
+
+# eSpeak WASM files (can be downloaded)
+client/public/espeakng/

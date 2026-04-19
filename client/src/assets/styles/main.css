@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-accent: #0ea5e9;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-dark-900 text-dark-50;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  * {
+    @apply border-dark-700;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-500;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-900;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-dark-700 text-dark-200 hover:bg-dark-600 focus:ring-dark-500;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-dark-300 hover:bg-dark-800 hover:text-dark-100;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+
+  .btn-icon {
+    @apply p-2;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 bg-dark-800 border border-dark-600 rounded-lg;
+    @apply text-dark-100 placeholder-dark-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply transition-colors;
+  }
+
+  .textarea {
+    @apply input resize-none;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-dark-300 mb-1;
+  }
+
+  .card {
+    @apply bg-dark-800 rounded-xl border border-dark-700;
+  }
+
+  .card-header {
+    @apply px-4 py-3 border-b border-dark-700;
+  }
+
+  .card-body {
+    @apply p-4;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-900 text-primary-300;
+  }
+
+  .badge-success {
+    @apply badge bg-green-900 text-green-300;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-900 text-yellow-300;
+  }
+
+  .badge-error {
+    @apply badge bg-red-900 text-red-300;
+  }
+
+  .progress-bar {
+    @apply w-full h-2 bg-dark-700 rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full bg-primary-500 rounded-full transition-all duration-300;
+  }
+
+  .tooltip {
+    @apply absolute z-50 px-2 py-1 text-xs bg-dark-700 text-dark-200 rounded shadow-lg;
+    @apply opacity-0 invisible transition-all duration-200;
+  }
+
+  .tooltip-trigger:hover .tooltip {
+    @apply opacity-100 visible;
+  }
+
+  .slide-thumbnail {
+    @apply relative cursor-pointer rounded-lg overflow-hidden border-2 border-transparent;
+    @apply transition-all duration-200;
+    @apply hover:border-dark-500;
+  }
+
+  .slide-thumbnail.active {
+    @apply border-primary-500;
+  }
+
+  .slide-thumbnail-image {
+    @apply w-full h-auto object-contain bg-dark-900;
+  }
+
+  .drop-zone {
+    @apply border-2 border-dashed border-dark-600 rounded-xl;
+    @apply flex flex-col items-center justify-center;
+    @apply transition-colors duration-200;
+    @apply hover:border-primary-500 hover:bg-primary-500/5;
+  }
+
+  .drop-zone.dragging {
+    @apply border-primary-500 bg-primary-500/10;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+}
