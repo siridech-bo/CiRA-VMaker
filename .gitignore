@@ -53,3 +53,7 @@ nul
 
 # eSpeak WASM files (can be downloaded)
 client/public/espeakng/
+
+# Claude Code / tool-specific
+.claude/
+.codeboarding/

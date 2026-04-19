@@ -244,18 +244,29 @@ Place markers on their **own line**, BEFORE the sentence that discusses that are
 
 ---
 
-## Output Format
+## Output Format (สำคัญมาก — ต้องทำตามเป๊ะ!)
+
+> ⚠️ **CRITICAL FORMAT RULES:**
+> - ใช้ \`## Slide N\` เท่านั้น — ห้ามใส่ **bold** หรือ formatting อื่น
+> - ❌ ผิด: \`## **Slide 1**\` หรือ \`**Slide 1**\`
+> - ✅ ถูก: \`## Slide 1\`
+> - ห้ามใส่ \`---\` separator ระหว่างสไลด์
+> - ห้าม escape เครื่องหมาย (เช่น \`\\!\` หรือ \`\\?\`) — ใช้ \`!\` และ \`?\` ตรง ๆ
 
 For each slide, output using this exact format — with a **blank line between each pointer block** for readability:
 
 \`\`\`
-## Slide N
+## Slide 1
 
 {@x,y:style} ประโยคแรกที่อธิบายพื้นที่นั้น
 
 {@x,y:style} ประโยคถัดไปสำหรับพื้นที่อื่น
 
 {@hide} ส่วนที่ไม่ต้องชี้จุดเฉพาะ
+
+## Slide 2
+
+{@x,y:style} เนื้อหาสไลด์ถัดไป...
 \`\`\`
 
 ---
