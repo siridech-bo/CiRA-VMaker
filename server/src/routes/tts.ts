@@ -50,9 +50,10 @@ async function generateWithEdgeTTS(
   await fs.writeFile(tempTextFile, text, 'utf-8')
 
   return new Promise((resolve, reject) => {
+    // Use --rate=VALUE format to avoid issues with negative values like -10%
     const args = [
       '--voice', voice,
-      '--rate', rate,
+      `--rate=${rate}`,
       '--file', tempTextFile,
       '--write-media', tempAudioFile
     ]
