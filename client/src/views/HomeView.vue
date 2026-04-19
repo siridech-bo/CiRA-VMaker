@@ -30,8 +30,13 @@ function handleUploadError(error: string) {
   uploadError.value = error
 }
 
-function downloadTemplate(lang: 'en' | 'th') {
-  const filename = lang === 'en' ? 'prompt-template-en.txt' : 'prompt-template-th.txt'
+function downloadTemplate(type: 'en' | 'en-dual' | 'th') {
+  const filenames: Record<string, string> = {
+    'en': 'prompt-template-en.txt',
+    'en-dual': 'prompt-template-en-dual.txt',
+    'th': 'prompt-template-th.txt'
+  }
+  const filename = filenames[type]
   const link = document.createElement('a')
   link.href = `/templates/${filename}`
   link.download = filename
@@ -124,16 +129,31 @@ function downloadTemplate(lang: 'en' | 'th') {
             Download templates to generate narration scripts with AI assistants
           </p>
         </div>
-        <div class="flex justify-center gap-3">
-          <button
-            @click="downloadTemplate('en')"
-            class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
-          >
-            <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span class="text-sm text-dark-200">English Template</span>
-          </button>
+        <div class="flex flex-col items-center gap-3">
+          <!-- English Templates -->
+          <div class="flex gap-3">
+            <button
+              @click="downloadTemplate('en')"
+              class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
+            >
+              <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span class="text-sm text-dark-200">English</span>
+              <span class="text-xs px-1.5 py-0.5 bg-dark-600 rounded text-dark-400">Single</span>
+            </button>
+            <button
+              @click="downloadTemplate('en-dual')"
+              class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
+            >
+              <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span class="text-sm text-dark-200">English</span>
+              <span class="text-xs px-1.5 py-0.5 bg-primary-600/30 rounded text-primary-300">Dual Voice</span>
+            </button>
+          </div>
+          <!-- Thai Template -->
           <button
             @click="downloadTemplate('th')"
             class="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg transition-colors"
@@ -141,7 +161,8 @@ function downloadTemplate(lang: 'en' | 'th') {
             <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            <span class="text-sm text-dark-200">Thai Template</span>
+            <span class="text-sm text-dark-200">Thai</span>
+            <span class="text-xs px-1.5 py-0.5 bg-dark-600 rounded text-dark-400">Single</span>
           </button>
         </div>
       </div>
