@@ -1,12 +1,9 @@
-===================================
 CiRA VMaker - English Narration Prompt Template
-===================================
 
 Use this template with AI assistants (ChatGPT, Claude, etc.) to generate narration scripts for your slides.
 
------------------------------------
+
 PROMPT:
------------------------------------
 
 I have a presentation with [NUMBER] slides. Please generate professional English narration scripts for each slide.
 
@@ -17,38 +14,46 @@ I have a presentation with [NUMBER] slides. Please generate professional English
 1. Write conversational, engaging narration (not just reading bullet points)
 2. Each slide narration should be 30-60 seconds when spoken
 3. Use clear, professional language
-4. Add transitions between slides (e.g., "Now let's look at...", "Moving on to...")
-5. Include pointer markers where visual attention is needed using this format:
+4. Use smooth transitions between ideas without announcing slide numbers
+5. Do NOT include "Slide 1:", "Slide 2:", or any slide numbering in the output
+6. Include pointer markers where visual attention is needed using this format:
    {@X,Y:style} where X,Y are percentages (0-100) and style is: laser, circle, arrow, spotlight, or hand
    Example: {@50,30:circle} This is the main concept we'll explore.
 
 **Output Format:**
-Return the narration for each slide in this format:
+Return ONLY the narration text for each slide, separated by blank lines. Do NOT include slide numbers, headers, or titles.
 
-SLIDE 1:
-[Narration text with optional pointer markers]
+---
 
-SLIDE 2:
-[Narration text with optional pointer markers]
+[First slide narration with optional pointer markers]
 
-(Continue for all slides)
+---
 
------------------------------------
+[Second slide narration with optional pointer markers]
+
+---
+
+(Continue for all slides, separated by --- between each)
+
+
 EXAMPLE OUTPUT:
------------------------------------
 
-SLIDE 1:
-Welcome to today's presentation on machine learning fundamentals. {@50,50:circle} At the center of our discussion is how computers can learn from data without being explicitly programmed.
+Welcome to a masterclass in systems design. {@50,35:circle} What you're looking at is more than a circuit diagram — it's the architect's blueprint for the quantum realm. At its heart sits the Josephson junction, the nonlinear element that makes everything possible. Over the next few slides, we'll trace the journey from fundamental physics all the way up to the engineered reality of a superconducting quantum processor.
 
-SLIDE 2:
-{@30,40:arrow} Let's start with supervised learning, one of the most common approaches. {@70,60:laser} Here you can see how the model learns from labeled examples to make predictions on new data.
+---
 
------------------------------------
+To understand where we're going, it helps to appreciate where we've been. {@25,55:circle} For a century, classical computation rode an exponential wave — Moore's Law, billions of transistors, all built on the bulk properties of semiconductors. {@75,55:spotlight} But in 1982, Richard Feynman pointed out a hard truth: to simulate quantum systems efficiently, computers themselves must be built from quantum elements.
+
+---
+
+So what exactly is a qubit? {@30,40:circle} A classical bit is a discrete switch — zero or one, end of story. {@75,35:circle} A qubit, by contrast, lives on the continuous surface of the Bloch sphere. But here's the crucial nuance — quantum speedup doesn't come from testing all states at once. It comes from engineering constructive and destructive interference between complex probability amplitudes.
+
+
 TIPS:
------------------------------------
 
 1. Keep sentences concise - they're easier to follow when spoken
 2. Avoid jargon unless your audience is technical
 3. Use pointer markers sparingly - 1-3 per slide is usually enough
 4. Write as if you're explaining to a colleague, not reading a textbook
-5. Include brief pauses by using shorter sentences
+5. Use smooth transitions like "Now let's look at...", "Here's the key insight..."
+6. Never say "Slide one", "On this slide", or reference slide numbers
