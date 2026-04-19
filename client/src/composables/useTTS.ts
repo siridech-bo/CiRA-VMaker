@@ -4,6 +4,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { blobStorage } from '@/services/blobStorage'
 import { parsePointerMarkers } from '@/utils/pointerParser'
 import { processAudio, PROCESSING_PRESETS } from '@/utils/audioProcessor'
+import { estimateWordTimings } from '@/utils/timingEstimator'
 import {
   initEspeakTTS,
   synthesize as espeakSynthesize,
@@ -33,6 +34,9 @@ let pendingGeneration: {
   resolve: () => void
   reject: (error: Error) => void
 } | null = null
+
+// Track text being generated for timing estimation (Kokoro only)
+const pendingTextForTiming = new Map<string, string>()
 
 export function useTTS() {
   const ttsStore = useTTSStore()
@@ -103,7 +107,16 @@ export function useTTS() {
 
       case 'generate-complete':
         if (data.slideId && data.audioBlob && data.duration !== undefined) {
-          handleAudioGenerated(data.slideId, data.audioBlob, data.duration)
+          // Estimate word timings for Kokoro TTS (English)
+          const originalText = pendingTextForTiming.get(data.slideId)
+          let timings = undefined
+          if (originalText) {
+            const durationMs = data.duration * 1000
+            timings = estimateWordTimings(originalText, durationMs)
+            console.log(`[Kokoro TTS] Estimated ${timings.length} word timings for slide ${data.slideId}`)
+            pendingTextForTiming.delete(data.slideId)
+          }
+          handleAudioGenerated(data.slideId, data.audioBlob, data.duration, timings)
         }
         ttsStore.stopGenerating()
         if (pendingGeneration && pendingGeneration.slideId === data.slideId) {
@@ -119,6 +132,7 @@ export function useTTS() {
         }
         ttsStore.stopGenerating()
         if (pendingGeneration) {
+          pendingTextForTiming.delete(pendingGeneration.slideId)
           pendingGeneration.reject(new Error(data.message ?? 'Unknown TTS error'))
           pendingGeneration = null
         }
@@ -271,6 +285,9 @@ export function useTTS() {
         throw new Error('Kokoro worker not initialized')
       }
 
+      // Store text for timing estimation when audio completes
+      pendingTextForTiming.set(slideId, cleanText)
+
       const message: TTSWorkerMessage = {
         type: 'generate',
         slideId,
@@ -337,6 +354,7 @@ export function useTTS() {
       kokoroWorker.postMessage(message)
       ttsStore.stopGenerating()
       if (pendingGeneration) {
+        pendingTextForTiming.delete(pendingGeneration.slideId)
         pendingGeneration.reject(new Error('Generation cancelled'))
         pendingGeneration = null
       }

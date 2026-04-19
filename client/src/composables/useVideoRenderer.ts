@@ -491,7 +491,7 @@ export function useVideoRenderer() {
 
   /**
    * Draw subtitle text at bottom center of canvas
-   * White text with black outline for readability
+   * White text on semi-transparent dark background box
    */
   function drawSubtitle(
     ctx: CanvasRenderingContext2D,
@@ -507,18 +507,30 @@ export function useVideoRenderer() {
     const fontSize = Math.round(canvasHeight * 0.045)
     ctx.font = `bold ${fontSize}px "Noto Sans Thai", "Sarabun", sans-serif`
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'bottom'
+    ctx.textBaseline = 'middle'
 
     const x = canvasWidth / 2
-    const y = canvasHeight - Math.round(canvasHeight * 0.06) // ~60px from bottom at 1080p
+    const y = canvasHeight - Math.round(canvasHeight * 0.08) // Position for text center
 
-    // Black outline for readability
-    ctx.strokeStyle = 'black'
-    ctx.lineWidth = Math.round(fontSize / 10) // ~5px at 48px font
-    ctx.lineJoin = 'round'
-    ctx.strokeText(text, x, y)
+    // Measure text for background box
+    const textMetrics = ctx.measureText(text)
+    const textWidth = textMetrics.width
+    const textHeight = fontSize * 1.2
+    const paddingX = fontSize * 0.5
+    const paddingY = fontSize * 0.3
+    const boxWidth = textWidth + paddingX * 2
+    const boxHeight = textHeight + paddingY * 2
+    const boxX = x - boxWidth / 2
+    const boxY = y - boxHeight / 2
+    const borderRadius = fontSize * 0.3
 
-    // White fill
+    // Draw rounded background box
+    ctx.beginPath()
+    ctx.roundRect(boxX, boxY, boxWidth, boxHeight, borderRadius)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
+    ctx.fill()
+
+    // Draw white text
     ctx.fillStyle = 'white'
     ctx.fillText(text, x, y)
 
