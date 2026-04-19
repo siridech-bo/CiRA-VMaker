@@ -258,21 +258,6 @@ function drawPointerStyle(
       ctx.stroke()
       break
     }
-    case 'spotlight': {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-      ctx.globalCompositeOperation = 'destination-out'
-      const spotGradient = ctx.createRadialGradient(x, y, 0, x, y, baseSize * 8)
-      spotGradient.addColorStop(0, 'rgba(0, 0, 0, 1)')
-      spotGradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.8)')
-      spotGradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-      ctx.beginPath()
-      ctx.arc(x, y, baseSize * 8, 0, Math.PI * 2)
-      ctx.fillStyle = spotGradient
-      ctx.fill()
-      ctx.globalCompositeOperation = 'source-over'
-      break
-    }
     case 'hand': {
       ctx.translate(x, y)
       ctx.beginPath()

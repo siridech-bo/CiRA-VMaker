@@ -1,6 +1,6 @@
 // Pointer animation types for video narration
 
-export type PointerStyle = 'laser' | 'circle' | 'arrow' | 'spotlight' | 'hand' | 'hide'
+export type PointerStyle = 'laser' | 'circle' | 'arrow' | 'hand' | 'hide'
 
 export interface PointerMarker {
   x: number              // 0-100 percentage
@@ -45,7 +45,6 @@ export const POINTER_STYLE_LABELS: Record<PointerStyle, string> = {
   laser: 'Laser Pointer',
   circle: 'Circle Highlight',
   arrow: 'Arrow',
-  spotlight: 'Spotlight',
   hand: 'Hand Cursor',
   hide: 'Hidden'
 }

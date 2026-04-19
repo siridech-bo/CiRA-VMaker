@@ -225,11 +225,10 @@ Include pointer markers to indicate where an animated pointer should appear on s
 Place markers on their **own line**, BEFORE the sentence that discusses that area.
 
 **Syntax:**
+- \`{@x,y:laser}\` — Red laser dot pointer (default)
 - \`{@x,y:circle}\` — Draw attention to a specific element หรือพื้นที่สำคัญ
 - \`{@x,y:arrow}\` — Point directionally at a label, component, or flow direction
 - \`{@hide}\` — Hide the pointer when no specific area is being referenced
-
-> ⚠️ **ห้ามใช้ \`spotlight\`** เด็ดขาด เพราะทำให้จอมืดเกินไปเวลา render เป็นวิดีโอ ให้ใช้ \`circle\` แทนในทุกกรณี
 
 **Coordinates:** x,y are percentages (0–100), where 0,0 is top-left and 100,100 is bottom-right.
 
@@ -421,11 +420,10 @@ Include pointer markers to indicate where an animated pointer should appear on s
 Place markers on their **own line**, BEFORE the sentence that discusses that area.
 
 **Syntax:**
+- \`{@x,y:laser}\` — Red laser dot pointer (default)
 - \`{@x,y:circle}\` — Draw attention to a specific element or important area
 - \`{@x,y:arrow}\` — Point directionally at a label, component, or flow direction
 - \`{@hide}\` — Hide the pointer when no specific area is being referenced
-
-> ⚠️ **Do NOT use \`spotlight\`** — it makes the screen too dark when rendering to video. Use \`circle\` instead in all cases.
 
 **Coordinates:** x,y are percentages (0–100), where 0,0 is top-left and 100,100 is bottom-right.
 
@@ -762,7 +760,6 @@ Third slide narration...</pre>
               <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:circle}</code> - Circle highlight (recommended)</p>
               <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:arrow}</code> - Arrow pointer for direction/flow</p>
               <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@hide}</code> - Hide pointer</p>
-              <p class="text-yellow-500/80 text-xs mt-2">⚠️ Don't use spotlight - it makes video too dark</p>
             </div>
           </details>
         </div>

@@ -20,7 +20,7 @@ I have a presentation with [NUMBER] slides. Please generate professional English
 5. Use smooth transitions between ideas without announcing slide numbers
 6. Do NOT include "Slide 1:", "Slide 2:", or any slide numbering in the output
 7. Include pointer markers where visual attention is needed using this format:
-   {@X,Y:style} where X,Y are percentages (0-100) and style is: laser, circle, arrow, spotlight, or hand
+   {@X,Y:style} where X,Y are percentages (0-100) and style is: laser, circle, arrow, or hand
    Example: {@50,30:circle} This is the main concept we'll explore.
 
 **Output Format:**
@@ -49,7 +49,7 @@ EXAMPLE OUTPUT:
 
 [1]To understand where we're going, let's take a moment to appreciate where we've been.
 [2]{@25,55:circle} For over a century, classical computing has followed Moore's Law — exponential growth powered by silicon transistors.
-[1]{@75,55:spotlight} But in 1982, Richard Feynman challenged the computing world with a profound insight.
+[1]{@75,55:laser} But in 1982, Richard Feynman challenged the computing world with a profound insight.
 [2]He argued that to truly simulate quantum systems, we need computers built from quantum elements themselves.
 
 ---

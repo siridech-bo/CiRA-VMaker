@@ -62,14 +62,14 @@ export function parsePointerMarkers(text: string): PointerTimeline {
       // Coordinate markers: {@x,y} or {@x,y:style}
       const x = parseInt(match[1], 10)
       const y = parseInt(match[2], 10)
-      const style = (match[3]?.toLowerCase() as PointerStyle) || 'laser'
+      const rawStyle = match[3]?.toLowerCase() || 'laser'
 
       // Validate coordinates
       if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
         markers.push({
           x,
           y,
-          style: isValidStyle(style) ? style : 'laser',
+          style: normalizeStyle(rawStyle),
           charIndex,
           cleanCharIndex,
           wordIndex: wordCount
@@ -92,9 +92,21 @@ export function parsePointerMarkers(text: string): PointerTimeline {
 
 /**
  * Check if a style string is valid
+ * Note: 'spotlight' is converted to 'laser' for backwards compatibility
  */
 function isValidStyle(style: string): style is PointerStyle {
-  return ['laser', 'circle', 'arrow', 'spotlight', 'hand', 'hide'].includes(style)
+  return ['laser', 'circle', 'arrow', 'hand', 'hide'].includes(style)
+}
+
+/**
+ * Normalize style - converts deprecated styles to valid ones
+ */
+function normalizeStyle(style: string): PointerStyle {
+  // Convert spotlight to laser (spotlight was removed as it made video too dark)
+  if (style === 'spotlight') {
+    return 'laser'
+  }
+  return isValidStyle(style) ? style : 'laser'
 }
 
 /**
@@ -198,7 +210,6 @@ Available styles:
   laser     - Red laser dot (default)
   circle    - Pulsing circle highlight
   arrow     - Arrow pointing at position
-  spotlight - Spotlight effect
   hand      - Cartoon hand cursor
 
 Examples:
