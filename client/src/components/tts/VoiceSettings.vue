@@ -312,10 +312,10 @@ const deviceTypeLabel = computed(() => {
         </div>
       </div>
 
-      <!-- Voice Blending (English/Kokoro only) -->
+      <!-- Dual Voice (English/Kokoro only) -->
       <div v-if="showBlendOptions" class="space-y-3 pt-2 border-t border-dark-700">
         <div class="flex items-center justify-between">
-          <label class="label mb-0">Voice Blending</label>
+          <label class="label mb-0">Dual Voice</label>
           <button
             @click="blendEnabled = !blendEnabled"
             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
@@ -330,7 +330,7 @@ const deviceTypeLabel = computed(() => {
 
         <template v-if="blendEnabled">
           <div>
-            <label class="label text-xs">Blend With</label>
+            <label class="label text-xs">Second Voice</label>
             <select v-model="secondaryVoice" class="input text-sm">
               <option v-for="voice in blendableVoices" :key="voice.id" :value="voice.id">
                 {{ voice.name }} ({{ voice.gender }})
@@ -338,27 +338,30 @@ const deviceTypeLabel = computed(() => {
             </select>
           </div>
 
-          <div>
-            <label class="label text-xs">
-              Mix Ratio: {{ blendRatioLabel }}
-            </label>
+          <div class="bg-dark-700/50 rounded-lg p-3 space-y-2">
             <div class="flex items-center gap-2">
-              <span class="text-xs text-dark-400 w-16 truncate">{{ ttsStore.currentVoice?.name || 'Primary' }}</span>
-              <input
-                v-model.number="blendRatio"
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                class="flex-1 h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer"
-              />
-              <span class="text-xs text-dark-400 w-16 truncate text-right">{{ blendableVoices.find(v => v.id === secondaryVoice)?.name || 'Secondary' }}</span>
+              <svg class="w-4 h-4 text-primary-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-xs font-medium text-dark-200">How to use</span>
+            </div>
+            <p class="text-xs text-dark-400 leading-relaxed">
+              Use <code class="px-1 py-0.5 bg-dark-600 rounded text-primary-300">[1]</code> and <code class="px-1 py-0.5 bg-dark-600 rounded text-primary-300">[2]</code> markers in your narration to switch speakers:
+            </p>
+            <div class="text-xs text-dark-500 bg-dark-800 rounded p-2 font-mono">
+              <span class="text-primary-400">[1]</span>Hello there!<br/>
+              <span class="text-primary-400">[2]</span>How are you?<br/>
+              <span class="text-primary-400">[1]</span>I'm doing great!
             </div>
           </div>
 
-          <p class="text-xs text-dark-500">
-            Mix two voices to create unique vocal characteristics
-          </p>
+          <div class="flex items-center gap-2 text-xs text-dark-400">
+            <span class="px-1.5 py-0.5 bg-primary-600/30 rounded text-primary-300">[1]</span>
+            <span>{{ ttsStore.currentVoice?.name || 'Primary' }}</span>
+            <span class="text-dark-600 mx-1">|</span>
+            <span class="px-1.5 py-0.5 bg-primary-600/30 rounded text-primary-300">[2]</span>
+            <span>{{ blendableVoices.find(v => v.id === secondaryVoice)?.name || 'Secondary' }}</span>
+          </div>
         </template>
       </div>
 

@@ -196,31 +196,60 @@ function concatenateAudioData(arrays: Float32Array[]): Float32Array {
 }
 
 /**
- * Mix two audio streams with a given blend ratio
- * @param primary - Primary voice audio
- * @param secondary - Secondary voice audio
- * @param ratio - Blend ratio (0 = 100% primary, 1 = 100% secondary)
+ * Voice segment for alternating voices
  */
-function mixAudioStreams(
-  primary: Float32Array,
-  secondary: Float32Array,
-  ratio: number
-): Float32Array {
-  // Use the longer array length to avoid cutting off audio
-  const length = Math.max(primary.length, secondary.length)
-  const result = new Float32Array(length)
+interface VoiceSegment {
+  text: string
+  voiceIndex: 1 | 2  // 1 = primary voice, 2 = secondary voice
+}
 
-  const primaryWeight = 1 - ratio
-  const secondaryWeight = ratio
+/**
+ * Parse text with voice markers [1] and [2] to split into voice segments
+ * If no markers found, returns single segment with primary voice
+ * Example: "[1]Hello there![2]How are you?[1]I'm fine."
+ */
+function parseVoiceSegments(text: string): VoiceSegment[] {
+  const segments: VoiceSegment[] = []
 
-  for (let i = 0; i < length; i++) {
-    const p = i < primary.length ? primary[i] : 0
-    const s = i < secondary.length ? secondary[i] : 0
-    // Mix with weights and clamp to prevent clipping
-    result[i] = Math.max(-1, Math.min(1, p * primaryWeight + s * secondaryWeight))
+  // Check if text has voice markers
+  const hasMarkers = /\[1\]|\[2\]/.test(text)
+
+  if (!hasMarkers) {
+    // No markers - return whole text as primary voice
+    return [{ text: text.trim(), voiceIndex: 1 }]
   }
 
-  return result
+  // Split by voice markers, keeping track of which voice
+  const pattern = /\[([12])\]/g
+  let lastIndex = 0
+  let currentVoice: 1 | 2 = 1  // Default to voice 1
+  let match: RegExpExecArray | null
+
+  // Check if text starts with a marker
+  const startsWithMarker = text.match(/^\[([12])\]/)
+  if (startsWithMarker) {
+    currentVoice = parseInt(startsWithMarker[1]) as 1 | 2
+  }
+
+  while ((match = pattern.exec(text)) !== null) {
+    // Get text before this marker
+    const textBefore = text.slice(lastIndex, match.index).trim()
+    if (textBefore) {
+      segments.push({ text: textBefore, voiceIndex: currentVoice })
+    }
+
+    // Update voice for next segment
+    currentVoice = parseInt(match[1]) as 1 | 2
+    lastIndex = match.index + match[0].length
+  }
+
+  // Get remaining text after last marker
+  const remaining = text.slice(lastIndex).trim()
+  if (remaining) {
+    segments.push({ text: remaining, voiceIndex: currentVoice })
+  }
+
+  return segments
 }
 
 async function generateAudio(
@@ -246,52 +275,101 @@ async function generateAudio(
   try {
     sendMessage({ type: 'generate-progress', progress: 0.05, slideId })
 
-    // Split text into manageable chunks
-    const chunks = splitIntoChunks(text)
-    const audioChunks: Float32Array[] = []
-    let sampleRate = 24000
+    // Check if voice alternation is enabled (blend enabled with secondary voice)
+    const useVoiceAlternation = blend?.enabled && blend.secondaryVoice
 
-    // Check if we need to do audio-level voice blending
-    const needsBlending = blend?.enabled && blend.blendRatio > 0 && blend.blendRatio < 1
+    if (useVoiceAlternation && blend) {
+      // Parse text for voice markers [1] and [2]
+      const voiceSegments = parseVoiceSegments(text)
 
-    console.log(`Generating audio for ${chunks.length} chunks${needsBlending ? ' with voice blending' : ''}`)
+      console.log(`Voice alternation: ${voiceSegments.length} segments`)
 
-    for (let i = 0; i < chunks.length; i++) {
+      const audioChunks: Float32Array[] = []
+      let sampleRate = 24000
+      let totalChunks = 0
+
+      // Count total chunks for progress
+      for (const segment of voiceSegments) {
+        totalChunks += splitIntoChunks(segment.text).length
+      }
+
+      let processedChunks = 0
+
+      for (const segment of voiceSegments) {
+        if (shouldCancel) {
+          isGenerating = false
+          return
+        }
+
+        const segmentVoice = segment.voiceIndex === 1 ? voice : blend.secondaryVoice
+        const chunks = splitIntoChunks(segment.text)
+
+        console.log(`Segment (voice ${segment.voiceIndex}): "${segment.text.substring(0, 40)}..." - ${chunks.length} chunks`)
+
+        for (const chunk of chunks) {
+          if (shouldCancel) {
+            isGenerating = false
+            return
+          }
+
+          const progress = 0.1 + (processedChunks / totalChunks) * 0.75
+          sendMessage({ type: 'generate-progress', progress, slideId })
+
+          const audio = await kokoro.generate(chunk, {
+            voice: segmentVoice,
+            speed
+          })
+
+          sampleRate = audio.sampling_rate || 24000
+          audioChunks.push(audio.audio)
+          processedChunks++
+        }
+      }
+
       if (shouldCancel) {
         isGenerating = false
         return
       }
 
-      const chunk = chunks[i]
-      const baseProgress = needsBlending ? 0.5 : 0.7
-      const progress = 0.1 + (i / chunks.length) * baseProgress
+      sendMessage({ type: 'generate-progress', progress: 0.9, slideId })
+
+      const combinedAudio = concatenateAudioData(audioChunks)
+      const wavBlob = createWavBlob(combinedAudio, sampleRate)
+      const duration = combinedAudio.length / sampleRate
+
+      console.log(`Generated alternating voice audio: ${duration.toFixed(2)}s`)
 
       sendMessage({
-        type: 'generate-progress',
-        progress,
-        slideId
+        type: 'generate-complete',
+        slideId,
+        audioBlob: wavBlob,
+        duration
       })
+    } else {
+      // Standard single-voice generation
+      const chunks = splitIntoChunks(text)
+      const audioChunks: Float32Array[] = []
+      let sampleRate = 24000
 
-      console.log(`Generating chunk ${i + 1}/${chunks.length}: "${chunk.substring(0, 50)}..."`)
+      console.log(`Generating audio for ${chunks.length} chunks (single voice)`)
 
-      if (needsBlending && blend) {
-        // Generate with both voices and mix
-        const [primaryAudio, secondaryAudio] = await Promise.all([
-          kokoro.generate(chunk, { voice, speed }),
-          kokoro.generate(chunk, { voice: blend.secondaryVoice, speed })
-        ])
+      for (let i = 0; i < chunks.length; i++) {
+        if (shouldCancel) {
+          isGenerating = false
+          return
+        }
 
-        sampleRate = primaryAudio.sampling_rate || 24000
+        const chunk = chunks[i]
+        const progress = 0.1 + (i / chunks.length) * 0.75
 
-        // Mix the two audio streams
-        const mixedAudio = mixAudioStreams(
-          primaryAudio.audio,
-          secondaryAudio.audio,
-          blend.blendRatio
-        )
+        sendMessage({
+          type: 'generate-progress',
+          progress,
+          slideId
+        })
 
-        audioChunks.push(mixedAudio)
-      } else {
+        console.log(`Generating chunk ${i + 1}/${chunks.length}: "${chunk.substring(0, 50)}..."`)
+
         const audio = await kokoro.generate(chunk, {
           voice,
           speed
@@ -300,31 +378,27 @@ async function generateAudio(
         sampleRate = audio.sampling_rate || 24000
         audioChunks.push(audio.audio)
       }
+
+      if (shouldCancel) {
+        isGenerating = false
+        return
+      }
+
+      sendMessage({ type: 'generate-progress', progress: 0.9, slideId })
+
+      const combinedAudio = concatenateAudioData(audioChunks)
+      const wavBlob = createWavBlob(combinedAudio, sampleRate)
+      const duration = combinedAudio.length / sampleRate
+
+      console.log(`Generated audio: ${duration.toFixed(2)}s from ${chunks.length} chunks`)
+
+      sendMessage({
+        type: 'generate-complete',
+        slideId,
+        audioBlob: wavBlob,
+        duration
+      })
     }
-
-    if (shouldCancel) {
-      isGenerating = false
-      return
-    }
-
-    sendMessage({ type: 'generate-progress', progress: 0.85, slideId })
-
-    // Concatenate all audio chunks
-    const combinedAudio = concatenateAudioData(audioChunks)
-
-    sendMessage({ type: 'generate-progress', progress: 0.95, slideId })
-
-    const wavBlob = createWavBlob(combinedAudio, sampleRate)
-    const duration = combinedAudio.length / sampleRate
-
-    console.log(`Generated audio: ${duration.toFixed(2)}s from ${chunks.length} chunks`)
-
-    sendMessage({
-      type: 'generate-complete',
-      slideId,
-      audioBlob: wavBlob,
-      duration
-    })
   } catch (error) {
     console.error('Audio generation failed:', error)
     sendMessage({

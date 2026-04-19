@@ -57,3 +57,17 @@ TIPS:
 4. Write as if you're explaining to a colleague, not reading a textbook
 5. Use smooth transitions like "Now let's look at...", "Here's the key insight..."
 6. Never say "Slide one", "On this slide", or reference slide numbers
+
+
+DUAL VOICE (Optional):
+
+To use two different voices alternating in your narration, use [1] and [2] markers:
+- [1] = Primary voice (first speaker)
+- [2] = Secondary voice (second speaker)
+
+Example:
+[1]Welcome everyone to today's presentation.
+[2]We're excited to walk you through these findings.
+[1]Let's start with the key highlights.
+
+Note: This feature only works with English (Kokoro TTS). If not using dual voice, simply omit the markers.
