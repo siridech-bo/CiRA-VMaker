@@ -204,41 +204,178 @@ const generatedPrompt = computed(() => {
   const slides = projectStore.slides
   const lang = promptLanguage.value
 
-  const langInstructions = lang === 'th'
-    ? `Generate narration in **Thai language** (ภาษาไทย).`
-    : `Generate narration in **English**.`
+  if (lang === 'th') {
+    return generateThaiPrompt(slides)
+  } else {
+    return generateEnglishPrompt(slides)
+  }
+})
 
+function generateThaiPrompt(slides: typeof projectStore.slides) {
   let prompt = `# AI Video Narration Generator
 
 ## Task
-Generate professional narration text for a presentation video with ${slides.length} slides.
-${langInstructions}
+Generate professional narration text for a presentation video.
+Generate narration in **Thai language** (ภาษาไทย).
+
+---
 
 ## Pointer Marker Syntax
 Include pointer markers to indicate where an animated pointer should appear on screen.
-Place markers BEFORE the text that discusses that area.
+Place markers on their **own line**, BEFORE the sentence that discusses that area.
 
 **Syntax:**
-- \`{@x,y}\` - Point at position (x,y are percentages 0-100, where 0,0 is top-left)
-- \`{@x,y:style}\` - Point with specific style (laser, circle, arrow, spotlight)
-- \`{@center}\` - Point at center of slide
-- \`{@hide}\` - Hide pointer
+- \`{@x,y:circle}\` — Draw attention to a specific element หรือพื้นที่สำคัญ
+- \`{@x,y:arrow}\` — Point directionally at a label, component, or flow direction
+- \`{@hide}\` — Hide the pointer when no specific area is being referenced
+
+> ⚠️ **ห้ามใช้ \`spotlight\`** เด็ดขาด เพราะทำให้จอมืดเกินไปเวลา render เป็นวิดีโอ ให้ใช้ \`circle\` แทนในทุกกรณี
+
+**Coordinates:** x,y are percentages (0–100), where 0,0 is top-left and 100,100 is bottom-right.
 
 **Example:**
 \`\`\`
-{@75,20:spotlight}This diagram shows the main components.
-{@30,55:circle}Notice this important element here.
-{@hide}Let me explain the underlying concept.
+{@75,20:circle} นี่คือส่วนประกอบหลักของระบบ — สังเกตดูให้ดี!
+
+{@30,55:circle} จุดนี้สำคัญมาก — อย่าพลาดเด็ดขาด!
+
+{@hide} ก่อนจะไปต่อ ขอทำความเข้าใจพื้นฐานก่อนสักนิด...
 \`\`\`
 
+---
+
 ## Output Format
-For each slide, output using this format:
+
+For each slide, output using this exact format — with a **blank line between each pointer block** for readability:
 
 \`\`\`
 ## Slide N
 
-{@x,y:style}Narration text with pointer markers embedded at appropriate positions...
+{@x,y:style} ประโยคแรกที่อธิบายพื้นที่นั้น
+
+{@x,y:style} ประโยคถัดไปสำหรับพื้นที่อื่น
+
+{@hide} ส่วนที่ไม่ต้องชี้จุดเฉพาะ
 \`\`\`
+
+---
+
+## Language Guidelines
+
+### Thai Transliteration of English Technical Terms
+เขียนทับศัพท์ภาษาอังกฤษด้วยอักษรไทย เพื่อให้ TTS ออกเสียงได้ถูกต้อง ใช้เครื่องหมายยัติภังค์ (-) เชื่อมคำที่เป็นชื่อเฉพาะหรือคำประสม
+
+| อังกฤษ | ทับศัพท์ไทยที่ถูกต้อง |
+|---|---|
+| Surface Code | ซอฟต์แฟซ-โค้ด |
+| Shor's Algorithm | ชอร์ส-อัลกอริทึม |
+| Fault-Tolerance | ฟอลต์-โทเลอแรนซ์ |
+| QLDPC | คิวแอลดีพีซี |
+| Neutral-Atom | นิวทรัล-แอตอม |
+| Optical Tweezers | ออปติคัล-ทวีเซอร์ |
+| Cryo-CMOS | ไครโอ-ซีมอส |
+| Quantum Dot | ควอนตัมดอต |
+| Spin Qubit | สปินคิวบิต |
+| Heterostructure | เฮเทอโรสตรักเชอร์ |
+| Entanglement Zone | เอนแทงเกิลเมนต์-โซน |
+| Storage Zone | สตอเรจ-โซน |
+| Through-Silicon Via (TSV) | ทรู-ซิลิกอน-เวีย |
+
+สำหรับคำย่อ เช่น CMOS, RSA, SET — ให้สะกดออกมาเป็นพยัญชนะไทยตัวต่อตัว เช่น ซี-มอส, อาร์-เอส-เอ, เอส-อี-ที
+
+---
+
+## Voice & Energy Guidelines (สำคัญมากสำหรับ TTS)
+
+เครื่อง TTS ตีความเครื่องหมายวรรคตอนเพื่อสร้างอารมณ์ในเสียง เขียนบทพูดให้มีพลังงาน สนุก และน่าติดตาม ตามแนวทางต่อไปนี้:
+
+### ใช้เครื่องหมายวรรคตอนเพื่อสร้างอารมณ์
+- \`!\` สำหรับความตื่นเต้น → "นี่แหละคือคำตอบ!" / "เจ๋งมากเลย!"
+- \`?\` สำหรับการดึงดูดความสนใจ → "แต่มันทำงานยังไงล่ะ?" / "พร้อมดูต่อไหม?"
+- \`...\` สำหรับการหยุดเพื่อสร้างความตื่นเต้น → "และผลลัพธ์ที่ได้คือ... น่าทึ่งมาก!"
+- \`—\` สำหรับการเน้นย้ำ → "สิ่งนี้ — สิ่งที่สำคัญที่สุด — เปลี่ยนทุกอย่างไปเลย"
+
+### สร้างพลังงานในการเล่าเรื่อง
+- เปิดแต่ละสไลด์ด้วยความตื่นเต้น → "โอเค! มาดูส่วนที่น่าสนใจที่สุดกัน!"
+- พูดตรงกับผู้ชม → "สังเกตดูนะ..." / "ส่วนนี้ต้องชอบแน่เลย"
+- สร้างความคาดหวัง → "รอดูสิ่งที่จะเกิดขึ้น..." / "เตรียมพร้อมได้เลย!"
+- ฉลองการค้นพบ → "ใช่แล้ว!" / "เยี่ยมมาก!" / "เจ๋งสุด ๆ!"
+
+### จังหวะและความยาวประโยค
+- สลับระหว่าง ประโยคสั้นกระชับ กับ คำอธิบายที่ยาวกว่า เพื่อให้มีจังหวะที่น่าฟัง
+- ใช้คำถามเชิงวาทศิลป์ → "ฟังดูคุ้น ๆ ไหม?" / "สมเหตุสมผลใช่ไหม?"
+- ใช้ประโยคเชื่อมที่สร้างโมเมนตัม → "แต่นั่นยังไม่ใช่ทั้งหมด..." / "และนี่คือส่วนที่ดีที่สุด..."
+
+### ตัวอย่าง: เปรียบเทียบแบบแบนกับแบบมีพลัง
+
+❌ **แบบแบน:**
+"สไลด์นี้แสดงคุณสมบัติหลัก คุณสมบัติแรกมีความสำคัญมาก"
+
+✅ **แบบมีพลัง:**
+\`\`\`
+{@75,25:circle} ดูนี่สิ! นี่คือคุณสมบัติหลักทั้งหมด — และเชื่อเลย คุณสมบัติแรกนี่?
+
+{@75,35:circle} มันเปลี่ยนเกมไปเลยครับ!
+\`\`\`
+
+---
+
+## Structure Guidelines
+
+### ความยาวต่อสไลด์
+- สั้น: 30–45 วินาที → สำหรับสไลด์แนะนำหรือสรุป
+- ปกติ: 45–90 วินาที → สำหรับสไลด์เนื้อหาหลัก
+- ยาว: 90–120 วินาที → สำหรับสไลด์ที่มีหลายองค์ประกอบซับซ้อน
+
+### เมื่อไหร่ควรใช้ \`circle\` และ \`arrow\`
+- ใช้ \`circle\` — เพื่อวงล้อมรอบองค์ประกอบ, ไฮไลต์จุดสำคัญ, หรือชี้พื้นที่กว้าง ๆ
+- ใช้ \`arrow\` — เพื่อชี้ทิศทางตามลำดับขั้นตอน, เส้นทางการไหล, หรือป้ายกำกับที่เชื่อมโยงกัน
+- ใช้ \`{@hide}\` — เมื่ออธิบายแนวคิดที่ไม่เกี่ยวกับพื้นที่เฉพาะบนสไลด์
+
+### จำนวน Pointer ต่อสไลด์
+- ขั้นต่ำ 3 จุด ต่อสไลด์
+- สูงสุด 6–7 จุด สำหรับสไลด์ที่มีองค์ประกอบหลายชิ้น
+
+### ลำดับการชี้จุด
+ชี้จุดตามลำดับที่สมเหตุสมผลทางสายตา เช่น:
+- บนลงล่าง สำหรับแผนภาพสแตกชั้น
+- ซ้ายไปขวา สำหรับกระบวนการหรือไทม์ไลน์
+- ศูนย์กลางออกนอก สำหรับแผนภาพรัศมี
+- ตามลำดับของตาราง แถวต่อแถว
+
+---
+
+## Slide-Opening Phrase Bank (วลีเปิดสไลด์)
+หมุนเวียนใช้วลีเปิดสไลด์ต่อไปนี้เพื่อไม่ให้ซ้ำซาก:
+
+- "โอเค! มาดูกันต่อเลย..."
+- "เยี่ยมมาก! ต่อไป..."
+- "ว้าว! นี่คือส่วนที่น่าตื่นเต้นที่สุด..."
+- "ตอนนี้มาถึงส่วนสำคัญแล้ว..."
+- "และนี่แหละคือจุดพลิกเกม..."
+- "รอแล้วรอเล่า — นี่คือสิ่งที่ทุกคนรอ!"
+- "มาดูกันว่า..."
+- "ถึงเวลาแล้ว..."
+- "เตรียมพร้อมได้เลย เพราะ..."
+- "นี่คือสไลด์ที่ชอบที่สุด..."
+
+---
+
+## Output Example (ตัวอย่างผลลัพธ์ที่ถูกต้อง)
+
+\`\`\`
+## Slide 3
+
+{@50,15:circle} โอเค! ก่อนจะสร้างคิวบิตได้ ต้องเลือกวัสดุที่ใช่ก่อน — และนี่คือการแข่งขันสามทางที่ดุเดือดมาก!
+
+{@20,55:circle} ผู้แข่งขันคนแรกทางซ้าย — แกลเลียมอาร์เซไนด์ หรือ GaAs! ดูดีนะ แต่ภายในนั้นวุ่นวายสุด ๆ — ทุกอะตอมมีสปินนิวเคลียส ทำให้เกิดสัญญาณรบกวนแม่เหล็กตลอดเวลา ตกรอบเลย!
+
+{@50,55:circle} ผู้แข่งขันคนที่สอง — ซิลิกอนธรรมชาติ ดีกว่ามาก แต่มีซิลิกอน-29 อยู่ถึง 4.7 เปอร์เซ็นต์...
+
+{@80,45:circle} และแชมเปี้ยนที่ชนะตั้งแต่ต้น — ซิลิกอน-28 เสริมสมบัติ! สปินนิวเคลียสเป็นศูนย์ เงียบสงบทางแม่เหล็กอย่างสมบูรณ์แบบ! นี่แหละคือวัสดุที่ถูกต้อง!
+\`\`\`
+
+---
 
 ## Slides to Generate
 
@@ -256,43 +393,131 @@ For each slide, output using this format:
 
   prompt += `---
 
-## Guidelines
-
-### Basic Requirements
-1. Write clear, engaging narration suitable for text-to-speech
-2. Add pointer markers when referencing specific areas of the slide
-3. Keep each slide's narration between 30-120 seconds when spoken
-4. ${lang === 'th' ? 'Use formal Thai suitable for educational content' : 'Use clear, professional English'}
-
-### Voice Expressiveness (IMPORTANT for TTS)
-The text-to-speech engine interprets punctuation and phrasing to add emotion. Write narration that sounds **energetic, engaging, and fun**:
-
-**Use Punctuation for Emotion:**
-- Exclamation marks for enthusiasm: "This is amazing!" "Let's dive in!"
-- Question marks for engagement: "But how does this work?" "Ready to see more?"
-- Ellipsis for dramatic pauses: "And the result is... incredible!"
-- Dashes for emphasis: "This feature — the most powerful one — changes everything."
-
-**Build Energy:**
-- Start sections with excitement: "Now here's where it gets interesting!"
-- Use direct address: "You'll love this part." "Notice how..."
-- Add anticipation: "Wait until you see..." "Get ready for..."
-- Celebrate discoveries: "That's right!" "Exactly!" "Perfect!"
-
-**Natural Flow:**
-- Vary sentence length: Mix short punchy sentences with longer explanations
-- Use rhetorical questions to engage: "Sound familiar?" "Makes sense, right?"
-- Add transitions that build momentum: "But that's not all..." "Here's the best part..."
-- Include verbal reactions: "Wow!" "Incredible!" "So cool!"
-
-**Example of Energetic vs Flat:**
-❌ Flat: "This slide shows the main features. The first feature is important."
-✅ Energetic: "Look at this! {@75,25:spotlight}These are the main features — and trust me, the first one? It's a game-changer!"
-
-Now generate engaging, energetic narration for all ${slides.length} slides:`
+Now generate engaging, energetic Thai narration for all ${slides.length} slides following the guidelines above.`
 
   return prompt
-})
+}
+
+function generateEnglishPrompt(slides: typeof projectStore.slides) {
+  let prompt = `# AI Video Narration Generator
+
+## Task
+Generate professional narration text for a presentation video with ${slides.length} slides.
+Generate narration in **English**.
+
+## Pointer Marker Syntax
+Include pointer markers to indicate where an animated pointer should appear on screen.
+Place markers on their **own line**, BEFORE the sentence that discusses that area.
+
+**Syntax:**
+- \`{@x,y:circle}\` — Draw attention to a specific element or important area
+- \`{@x,y:arrow}\` — Point directionally at a label, component, or flow direction
+- \`{@hide}\` — Hide the pointer when no specific area is being referenced
+
+> ⚠️ **Do NOT use \`spotlight\`** — it makes the screen too dark when rendering to video. Use \`circle\` instead in all cases.
+
+**Coordinates:** x,y are percentages (0–100), where 0,0 is top-left and 100,100 is bottom-right.
+
+**Example:**
+\`\`\`
+{@75,20:circle} This is the main component of the system — pay close attention!
+
+{@30,55:circle} This point is crucial — don't miss it!
+
+{@hide} Before we continue, let me explain the underlying concept...
+\`\`\`
+
+---
+
+## Output Format
+
+For each slide, output using this exact format — with a **blank line between each pointer block** for readability:
+
+\`\`\`
+## Slide N
+
+{@x,y:style} First sentence explaining that area
+
+{@x,y:style} Next sentence for another area
+
+{@hide} Part that doesn't reference a specific area
+\`\`\`
+
+---
+
+## Voice & Energy Guidelines (IMPORTANT for TTS)
+
+The TTS engine interprets punctuation to create emotion. Write narration that sounds **energetic, engaging, and fun**:
+
+### Use Punctuation for Emotion
+- \`!\` for excitement → "This is the answer!" / "How cool is that!"
+- \`?\` for engagement → "But how does it work?" / "Ready for more?"
+- \`...\` for dramatic pauses → "And the result is... incredible!"
+- \`—\` for emphasis → "This — the most important part — changes everything."
+
+### Build Energy in Storytelling
+- Open each slide with excitement → "Okay! Let's look at the most interesting part!"
+- Speak directly to the audience → "Notice this..." / "You'll love this part"
+- Build anticipation → "Wait until you see..." / "Get ready!"
+- Celebrate discoveries → "That's right!" / "Excellent!" / "So cool!"
+
+### Rhythm and Sentence Length
+- Alternate between short punchy sentences and longer explanations
+- Use rhetorical questions → "Sound familiar?" / "Makes sense, right?"
+- Use momentum-building transitions → "But that's not all..." / "Here's the best part..."
+
+### Example: Flat vs Energetic
+
+❌ **Flat:**
+"This slide shows the main features. The first feature is important."
+
+✅ **Energetic:**
+\`\`\`
+{@75,25:circle} Look at this! These are all the main features — and trust me, the first one?
+
+{@75,35:circle} It's a total game-changer!
+\`\`\`
+
+---
+
+## Structure Guidelines
+
+### Duration per Slide
+- Short: 30–45 seconds → for intro or summary slides
+- Normal: 45–90 seconds → for main content slides
+- Long: 90–120 seconds → for slides with multiple complex elements
+
+### When to use \`circle\` and \`arrow\`
+- Use \`circle\` — to encircle elements, highlight key points, or indicate broad areas
+- Use \`arrow\` — to point directionally for sequences, flow paths, or connected labels
+- Use \`{@hide}\` — when explaining concepts not tied to a specific area on the slide
+
+### Pointer Count per Slide
+- Minimum 3 points per slide
+- Maximum 6–7 points for slides with many elements
+
+---
+
+## Slides to Generate
+
+`
+
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i]
+    prompt += `### Slide ${i + 1}\n`
+    prompt += `- Image: [Slide ${i + 1} of the presentation]\n`
+    if (slide.caption.trim()) {
+      prompt += `- Current caption: "${slide.caption.slice(0, 100)}${slide.caption.length > 100 ? '...' : ''}"\n`
+    }
+    prompt += `\n`
+  }
+
+  prompt += `---
+
+Now generate engaging, energetic English narration for all ${slides.length} slides following the guidelines above.`
+
+  return prompt
+}
 
 async function copyPromptToClipboard() {
   try {
@@ -523,12 +748,10 @@ Third slide narration...</pre>
               Pointer Syntax Reference
             </summary>
             <div class="mt-3 text-dark-400 space-y-2">
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30}</code> - Point at x=50%, y=30%</p>
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:circle}</code> - Circle highlight</p>
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:arrow}</code> - Arrow pointer</p>
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:spotlight}</code> - Spotlight effect</p>
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@center}</code> - Center of slide</p>
+              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:circle}</code> - Circle highlight (recommended)</p>
+              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:arrow}</code> - Arrow pointer for direction/flow</p>
               <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@hide}</code> - Hide pointer</p>
+              <p class="text-yellow-500/80 text-xs mt-2">⚠️ Don't use spotlight - it makes video too dark</p>
             </div>
           </details>
         </div>
