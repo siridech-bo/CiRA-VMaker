@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import type { Slide, PointerStyle } from '@/types'
+import type { Slide, PointerStyle, WordTiming } from '@/types'
 import { parsePointerMarkers, calculateMarkerTimings, getPointerStateAtTime } from '@/utils/pointerParser'
+import { blobStorage } from '@/services/blobStorage'
 
 interface PlaybackState {
   currentTime: number
@@ -23,6 +24,9 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)
 const isLoading = ref(true)
 const hasError = ref(false)
+
+// Subtitle timing data
+const subtitleTimings = ref<WordTiming[]>([])
 
 // Pointer animation state
 const pointerState = ref({
@@ -64,6 +68,32 @@ const currentPointer = computed(() => {
   )
 })
 
+// Get current subtitle text based on playback time
+const currentSubtitle = computed(() => {
+  if (!props.playbackState || subtitleTimings.value.length === 0) {
+    return ''
+  }
+  const currentTimeMs = props.playbackState.currentTime * 1000
+  for (const timing of subtitleTimings.value) {
+    if (currentTimeMs >= timing.startTime && currentTimeMs < timing.endTime) {
+      return timing.text
+    }
+  }
+  return ''
+})
+
+// Load subtitle timing data for the current slide
+async function loadSubtitleTimings() {
+  try {
+    const audioData = await blobStorage.getAudioWithDuration(props.slide.id)
+    subtitleTimings.value = audioData?.timings || []
+    console.log(`[SlidePreview] Loaded ${subtitleTimings.value.length} subtitle timings for slide ${props.slide.id}`)
+  } catch (error) {
+    console.warn('[SlidePreview] Failed to load subtitle timings:', error)
+    subtitleTimings.value = []
+  }
+}
+
 function handleLoad() {
   isLoading.value = false
   hasError.value = false
@@ -86,48 +116,76 @@ function updateCanvasSize() {
   canvas.height = img.clientHeight
 }
 
-function drawPointer() {
-  if (!canvasRef.value || !currentPointer.value || !currentPointer.value.visible) {
-    // Clear canvas if no pointer
-    if (canvasRef.value) {
-      const ctx = canvasRef.value.getContext('2d')
-      if (ctx) ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
-    }
-    return
-  }
+function drawSubtitle(ctx: CanvasRenderingContext2D, text: string, canvasWidth: number, canvasHeight: number) {
+  if (!text) return
 
+  ctx.save()
+
+  // Scale font size based on canvas size (~4% of height)
+  const fontSize = Math.round(canvasHeight * 0.04)
+  ctx.font = `bold ${fontSize}px "Noto Sans Thai", "Sarabun", sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+
+  const x = canvasWidth / 2
+  const y = canvasHeight - Math.round(canvasHeight * 0.05) // ~5% from bottom
+
+  // Black outline for readability
+  ctx.strokeStyle = 'black'
+  ctx.lineWidth = Math.round(fontSize / 10)
+  ctx.lineJoin = 'round'
+  ctx.strokeText(text, x, y)
+
+  // White fill
+  ctx.fillStyle = 'white'
+  ctx.fillText(text, x, y)
+
+  ctx.restore()
+}
+
+function drawPointer() {
   const canvas = canvasRef.value
+  if (!canvas) return
+
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  // Clear previous frame
+  // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // Smooth interpolation toward target
-  const pointer = currentPointer.value
-  const now = performance.now()
+  // Draw pointer if visible
+  if (currentPointer.value && currentPointer.value.visible) {
+    // Smooth interpolation toward target
+    const pointer = currentPointer.value
+    const now = performance.now()
 
-  if (pointerState.value.targetX !== pointer.x || pointerState.value.targetY !== pointer.y) {
-    pointerState.value.animStartTime = now
-    pointerState.value.targetX = pointer.x
-    pointerState.value.targetY = pointer.y
+    if (pointerState.value.targetX !== pointer.x || pointerState.value.targetY !== pointer.y) {
+      pointerState.value.animStartTime = now
+      pointerState.value.targetX = pointer.x
+      pointerState.value.targetY = pointer.y
+    }
+
+    const elapsed = now - pointerState.value.animStartTime
+    const progress = Math.min(1, elapsed / POINTER_TRANSITION_MS)
+    const easeProgress = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+
+    pointerState.value.currentX += (pointerState.value.targetX - pointerState.value.currentX) * easeProgress
+    pointerState.value.currentY += (pointerState.value.targetY - pointerState.value.currentY) * easeProgress
+
+    // Calculate position
+    const x = (pointerState.value.currentX / 100) * canvas.width
+    const y = (pointerState.value.currentY / 100) * canvas.height
+    const baseSize = Math.min(canvas.width, canvas.height) * 0.025
+
+    ctx.save()
+    drawPointerStyle(ctx, x, y, pointer.style, baseSize, canvas.width, canvas.height)
+    ctx.restore()
   }
 
-  const elapsed = now - pointerState.value.animStartTime
-  const progress = Math.min(1, elapsed / POINTER_TRANSITION_MS)
-  const easeProgress = 1 - Math.pow(1 - progress, 3) // easeOutCubic
-
-  pointerState.value.currentX += (pointerState.value.targetX - pointerState.value.currentX) * easeProgress
-  pointerState.value.currentY += (pointerState.value.targetY - pointerState.value.currentY) * easeProgress
-
-  // Calculate position
-  const x = (pointerState.value.currentX / 100) * canvas.width
-  const y = (pointerState.value.currentY / 100) * canvas.height
-  const baseSize = Math.min(canvas.width, canvas.height) * 0.025
-
-  ctx.save()
-  drawPointerStyle(ctx, x, y, pointer.style, baseSize, canvas.width, canvas.height)
-  ctx.restore()
+  // Draw subtitle if playing
+  if (props.playbackState?.isPlaying && currentSubtitle.value) {
+    drawSubtitle(ctx, currentSubtitle.value, canvas.width, canvas.height)
+  }
 }
 
 function drawPointerStyle(
@@ -256,7 +314,7 @@ watch(() => props.slide.imageUrl, () => {
   hasError.value = false
 })
 
-// Reset pointer state when slide changes
+// Reset pointer state and load subtitle timings when slide changes
 watch(() => props.slide.id, () => {
   pointerState.value = {
     currentX: 50,
@@ -265,10 +323,29 @@ watch(() => props.slide.id, () => {
     targetY: 50,
     animStartTime: 0
   }
+  // Load subtitle timings for the new slide
+  if (props.slide.audioGenerated) {
+    loadSubtitleTimings()
+  } else {
+    subtitleTimings.value = []
+  }
+}, { immediate: true })
+
+// Reload subtitle timings when audio is generated
+watch(() => props.slide.audioGenerated, (audioGenerated) => {
+  if (audioGenerated) {
+    loadSubtitleTimings()
+  } else {
+    subtitleTimings.value = []
+  }
 })
 
 onMounted(() => {
   window.addEventListener('resize', updateCanvasSize)
+  // Load subtitle timings if audio already generated
+  if (props.slide.audioGenerated) {
+    loadSubtitleTimings()
+  }
 })
 
 onUnmounted(() => {
