@@ -20,8 +20,22 @@ I have a presentation with [NUMBER] slides. Please generate professional English
 5. Use smooth transitions between ideas without announcing slide numbers
 6. Do NOT include "Slide 1:", "Slide 2:", or any slide numbering in the output
 7. Include pointer markers where visual attention is needed using this format:
-   {@X,Y:style} where X,Y are percentages (0-100) and style is: laser, circle, arrow, or hand
-   Example: {@50,30:circle} This is the main concept we'll explore.
+   {@X,Y:style} where X,Y are percentages (0-100)
+
+   **Basic styles:**
+   - laser - Red laser pointer dot
+   - circle - Blue circle highlight
+   - arrow - Red pointing arrow
+   - hand - Cartoon hand cursor
+
+   **Animated styles (cartoon effects):**
+   - bouncy - Bouncy hand that springs into view
+   - sketch-circle - Hand-drawn sketchy circle that draws itself
+   - sketch-arrow - Squiggly hand-drawn arrow
+   - pop - Purple circle that pops in with overshoot
+   - wiggle - Shaking exclamation for attention
+
+   Example: {@50,30:sketch-circle} This is the main concept we'll explore.
 
 **Output Format:**
 Return ONLY the narration text for each slide, separated by blank lines. Use [1] and [2] markers to switch speakers. Do NOT include slide numbers, headers, or titles.
@@ -43,20 +57,20 @@ EXAMPLE OUTPUT:
 
 [1]Welcome everyone to today's deep dive into quantum computing architecture.
 [2]We're excited to walk you through the fundamentals of how these remarkable machines actually work.
-[1]{@50,35:circle} What you're looking at here is the heart of a quantum processor — the Josephson junction. This tiny component is what makes everything possible.
+[1]{@50,35:sketch-circle} What you're looking at here is the heart of a quantum processor — the Josephson junction. This tiny component is what makes everything possible.
 
 ---
 
 [1]To understand where we're going, let's take a moment to appreciate where we've been.
-[2]{@25,55:circle} For over a century, classical computing has followed Moore's Law — exponential growth powered by silicon transistors.
-[1]{@75,55:laser} But in 1982, Richard Feynman challenged the computing world with a profound insight.
+[2]{@25,55:bouncy} For over a century, classical computing has followed Moore's Law — exponential growth powered by silicon transistors.
+[1]{@75,55:pop} But in 1982, Richard Feynman challenged the computing world with a profound insight.
 [2]He argued that to truly simulate quantum systems, we need computers built from quantum elements themselves.
 
 ---
 
 [1]So what exactly makes a qubit different from a classical bit?
-[2]{@30,40:circle} A classical bit is straightforward — it's either zero or one, nothing in between.
-[1]{@75,35:circle} A qubit, on the other hand, exists on this continuous surface called the Bloch sphere.
+[2]{@30,40:sketch-circle} A classical bit is straightforward — it's either zero or one, nothing in between.
+[1]{@75,35:wiggle} A qubit, on the other hand, exists on this continuous surface called the Bloch sphere.
 [2]And here's the key insight — quantum speedup comes from carefully engineering interference patterns between probability amplitudes.
 
 
@@ -68,3 +82,5 @@ TIPS:
 4. Avoid having one speaker dominate - balance the dialogue
 5. Use pointer markers sparingly - 1-3 per slide is usually enough
 6. Never say "Slide one", "On this slide", or reference slide numbers
+7. Use animated styles (bouncy, sketch-circle, pop, wiggle) for key moments to grab attention
+8. Use basic styles (laser, circle, arrow) for standard pointing

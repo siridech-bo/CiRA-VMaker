@@ -17,8 +17,22 @@ I have a presentation with [NUMBER] slides. Please generate professional English
 4. Use smooth transitions between ideas without announcing slide numbers
 5. Do NOT include "Slide 1:", "Slide 2:", or any slide numbering in the output
 6. Include pointer markers where visual attention is needed using this format:
-   {@X,Y:style} where X,Y are percentages (0-100) and style is: laser, circle, arrow, or hand
-   Example: {@50,30:circle} This is the main concept we'll explore.
+   {@X,Y:style} where X,Y are percentages (0-100)
+
+   **Basic styles:**
+   - laser - Red laser pointer dot
+   - circle - Blue circle highlight
+   - arrow - Red pointing arrow
+   - hand - Cartoon hand cursor
+
+   **Animated styles (cartoon effects):**
+   - bouncy - Bouncy hand that springs into view
+   - sketch-circle - Hand-drawn sketchy circle that draws itself
+   - sketch-arrow - Squiggly hand-drawn arrow
+   - pop - Purple circle that pops in with overshoot
+   - wiggle - Shaking exclamation for attention
+
+   Example: {@50,30:sketch-circle} This is the main concept we'll explore.
 
 **Output Format:**
 Return ONLY the narration text for each slide, separated by blank lines. Do NOT include slide numbers, headers, or titles.
@@ -38,15 +52,15 @@ Return ONLY the narration text for each slide, separated by blank lines. Do NOT 
 
 EXAMPLE OUTPUT:
 
-Welcome to a masterclass in systems design. {@50,35:circle} What you're looking at is more than a circuit diagram — it's the architect's blueprint for the quantum realm. At its heart sits the Josephson junction, the nonlinear element that makes everything possible. Over the next few slides, we'll trace the journey from fundamental physics all the way up to the engineered reality of a superconducting quantum processor.
+Welcome to a masterclass in systems design. {@50,35:sketch-circle} What you're looking at is more than a circuit diagram — it's the architect's blueprint for the quantum realm. At its heart sits the Josephson junction, the nonlinear element that makes everything possible. Over the next few slides, we'll trace the journey from fundamental physics all the way up to the engineered reality of a superconducting quantum processor.
 
 ---
 
-To understand where we're going, it helps to appreciate where we've been. {@25,55:circle} For a century, classical computation rode an exponential wave — Moore's Law, billions of transistors, all built on the bulk properties of semiconductors. {@75,55:laser} But in 1982, Richard Feynman pointed out a hard truth: to simulate quantum systems efficiently, computers themselves must be built from quantum elements.
+To understand where we're going, it helps to appreciate where we've been. {@25,55:bouncy} For a century, classical computation rode an exponential wave — Moore's Law, billions of transistors, all built on the bulk properties of semiconductors. {@75,55:pop} But in 1982, Richard Feynman pointed out a hard truth: to simulate quantum systems efficiently, computers themselves must be built from quantum elements.
 
 ---
 
-So what exactly is a qubit? {@30,40:circle} A classical bit is a discrete switch — zero or one, end of story. {@75,35:circle} A qubit, by contrast, lives on the continuous surface of the Bloch sphere. But here's the crucial nuance — quantum speedup doesn't come from testing all states at once. It comes from engineering constructive and destructive interference between complex probability amplitudes.
+So what exactly is a qubit? {@30,40:sketch-circle} A classical bit is a discrete switch — zero or one, end of story. {@75,35:wiggle} A qubit, by contrast, lives on the continuous surface of the Bloch sphere. But here's the crucial nuance — quantum speedup doesn't come from testing all states at once. It comes from engineering constructive and destructive interference between complex probability amplitudes.
 
 
 TIPS:
@@ -57,3 +71,5 @@ TIPS:
 4. Write as if you're explaining to a colleague, not reading a textbook
 5. Use smooth transitions like "Now let's look at...", "Here's the key insight..."
 6. Never say "Slide one", "On this slide", or reference slide numbers
+7. Use animated styles (bouncy, sketch-circle, pop, wiggle) for key moments to grab attention
+8. Use basic styles (laser, circle, arrow) for standard pointing

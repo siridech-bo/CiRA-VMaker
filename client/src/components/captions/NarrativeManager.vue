@@ -224,19 +224,26 @@ Generate narration in **Thai language** (ภาษาไทย).
 Include pointer markers to indicate where an animated pointer should appear on screen.
 Place markers on their **own line**, BEFORE the sentence that discusses that area.
 
-**Syntax:**
+**Basic Styles:**
 - \`{@x,y:laser}\` — Red laser dot pointer (default)
-- \`{@x,y:circle}\` — Draw attention to a specific element หรือพื้นที่สำคัญ
-- \`{@x,y:arrow}\` — Point directionally at a label, component, or flow direction
-- \`{@hide}\` — Hide the pointer when no specific area is being referenced
+- \`{@x,y:circle}\` — Blue circle highlight
+- \`{@x,y:arrow}\` — Red pointing arrow
+- \`{@hide}\` — Hide the pointer
+
+**Animated Styles (Cartoon Effects):**
+- \`{@x,y:bouncy}\` — Bouncy hand that springs into view
+- \`{@x,y:sketch-circle}\` — Hand-drawn sketchy circle that draws itself
+- \`{@x,y:sketch-arrow}\` — Squiggly hand-drawn arrow
+- \`{@x,y:pop}\` — Purple circle that pops in with overshoot
+- \`{@x,y:wiggle}\` — Shaking exclamation for attention
 
 **Coordinates:** x,y are percentages (0–100), where 0,0 is top-left and 100,100 is bottom-right.
 
 **Example:**
 \`\`\`
-{@75,20:circle} นี่คือส่วนประกอบหลักของระบบ — สังเกตดูให้ดี!
+{@75,20:sketch-circle} นี่คือส่วนประกอบหลักของระบบ — สังเกตดูให้ดี!
 
-{@30,55:circle} จุดนี้สำคัญมาก — อย่าพลาดเด็ดขาด!
+{@30,55:bouncy} จุดนี้สำคัญมาก — อย่าพลาดเด็ดขาด!
 
 {@hide} ก่อนจะไปต่อ ขอทำความเข้าใจพื้นฐานก่อนสักนิด...
 \`\`\`
@@ -419,19 +426,26 @@ Generate narration in **English**.
 Include pointer markers to indicate where an animated pointer should appear on screen.
 Place markers on their **own line**, BEFORE the sentence that discusses that area.
 
-**Syntax:**
+**Basic Styles:**
 - \`{@x,y:laser}\` — Red laser dot pointer (default)
-- \`{@x,y:circle}\` — Draw attention to a specific element or important area
-- \`{@x,y:arrow}\` — Point directionally at a label, component, or flow direction
-- \`{@hide}\` — Hide the pointer when no specific area is being referenced
+- \`{@x,y:circle}\` — Blue circle highlight
+- \`{@x,y:arrow}\` — Red pointing arrow
+- \`{@hide}\` — Hide the pointer
+
+**Animated Styles (Cartoon Effects):**
+- \`{@x,y:bouncy}\` — Bouncy hand that springs into view
+- \`{@x,y:sketch-circle}\` — Hand-drawn sketchy circle that draws itself
+- \`{@x,y:sketch-arrow}\` — Squiggly hand-drawn arrow
+- \`{@x,y:pop}\` — Purple circle that pops in with overshoot
+- \`{@x,y:wiggle}\` — Shaking exclamation for attention
 
 **Coordinates:** x,y are percentages (0–100), where 0,0 is top-left and 100,100 is bottom-right.
 
 **Example:**
 \`\`\`
-{@75,20:circle} This is the main component of the system — pay close attention!
+{@75,20:sketch-circle} This is the main component of the system — pay close attention!
 
-{@30,55:circle} This point is crucial — don't miss it!
+{@30,55:bouncy} This point is crucial — don't miss it!
 
 {@hide} Before we continue, let me explain the underlying concept...
 \`\`\`
@@ -756,10 +770,22 @@ Third slide narration...</pre>
             <summary class="text-dark-300 cursor-pointer hover:text-white">
               Pointer Syntax Reference
             </summary>
-            <div class="mt-3 text-dark-400 space-y-2">
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:circle}</code> - Circle highlight (recommended)</p>
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:arrow}</code> - Arrow pointer for direction/flow</p>
-              <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@hide}</code> - Hide pointer</p>
+            <div class="mt-3 text-dark-400 space-y-3">
+              <div>
+                <p class="text-dark-300 font-medium mb-1">Basic Styles:</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:circle}</code> - Circle highlight</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:arrow}</code> - Arrow pointer</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@50,30:laser}</code> - Red laser dot</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded">{@hide}</code> - Hide pointer</p>
+              </div>
+              <div>
+                <p class="text-dark-300 font-medium mb-1">Animated Styles (Cartoon):</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded text-primary-300">{@50,30:bouncy}</code> - Bouncy hand entrance</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded text-primary-300">{@50,30:sketch-circle}</code> - Hand-drawn circle</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded text-primary-300">{@50,30:sketch-arrow}</code> - Sketchy arrow</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded text-primary-300">{@50,30:pop}</code> - Pop-in effect</p>
+                <p><code class="bg-dark-800 px-1.5 py-0.5 rounded text-primary-300">{@50,30:wiggle}</code> - Attention shake</p>
+              </div>
             </div>
           </details>
         </div>

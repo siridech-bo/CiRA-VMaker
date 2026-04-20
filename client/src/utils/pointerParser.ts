@@ -4,11 +4,11 @@ import type { PointerMarker, PointerTimeline, PointerStyle } from '@/types'
  * Regex to match pointer markers in text
  * Formats supported:
  * - {@x,y} - basic pointer at x%, y%
- * - {@x,y:style} - pointer with specific style
+ * - {@x,y:style} - pointer with specific style (supports hyphenated styles like sketch-circle)
  * - {@center} - center of slide
  * - {@hide} - hide pointer
  */
-const POINTER_MARKER_REGEX = /\{@(\d+),(\d+)(?::(\w+))?\}|\{@(center|hide)\}/gi
+const POINTER_MARKER_REGEX = /\{@(\d+),(\d+)(?::([\w-]+))?\}|\{@(center|hide)\}/gi
 
 /**
  * Parse pointer markers from text and return clean text + marker data
@@ -90,12 +90,20 @@ export function parsePointerMarkers(text: string): PointerTimeline {
   }
 }
 
+// All valid pointer styles (basic + animated)
+const VALID_STYLES = [
+  // Basic styles
+  'laser', 'circle', 'arrow', 'hand', 'hide',
+  // Animated styles (GSAP + Rough.js)
+  'bouncy', 'sketch-circle', 'sketch-arrow', 'pop', 'wiggle'
+]
+
 /**
  * Check if a style string is valid
  * Note: 'spotlight' is converted to 'laser' for backwards compatibility
  */
 function isValidStyle(style: string): style is PointerStyle {
-  return ['laser', 'circle', 'arrow', 'hand', 'hide'].includes(style)
+  return VALID_STYLES.includes(style)
 }
 
 /**
@@ -206,16 +214,24 @@ Pointer Marker Syntax:
   {@center}      - Point at center of slide
   {@hide}        - Hide pointer
 
-Available styles:
+Basic styles:
   laser     - Red laser dot (default)
   circle    - Pulsing circle highlight
   arrow     - Arrow pointing at position
   hand      - Cartoon hand cursor
 
+Animated styles (cartoon effects):
+  bouncy        - Bouncy entrance with squash/stretch
+  sketch-circle - Hand-drawn sketchy circle
+  sketch-arrow  - Squiggly hand-drawn arrow
+  pop           - Pop-in with scale overshoot
+  wiggle        - Shaking attention effect
+
 Examples:
   {@75,25}This is the title area.
   {@30,60:circle}Look at this important diagram.
-  {@50,80:arrow}The formula is shown here.
+  {@50,80:bouncy}Check out this feature!
+  {@40,50:sketch-circle}This is the key concept.
   {@hide}Now let me explain the concept.
 `.trim()
 }

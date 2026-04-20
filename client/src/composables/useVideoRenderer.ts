@@ -2,7 +2,9 @@ import { useProjectStore } from '@/stores/projectStore'
 import { useRenderStore } from '@/stores/renderStore'
 import { blobStorage } from '@/services/blobStorage'
 import { parsePointerMarkers, calculateMarkerTimings, getPointerStateAtTime } from '@/utils/pointerParser'
-import type { PointerMarker, PointerStyle, WordTiming } from '@/types'
+import type { PointerMarker, PointerStyle, WordTiming, AnimatedPointerStyle } from '@/types'
+import { isAnimatedStyle, ANIMATED_STYLE_CONFIG } from '@/types/pointer'
+import rough from 'roughjs'
 
 let isRendering = false
 let shouldCancel = false
@@ -16,6 +18,11 @@ interface PointerAnimState {
   style: PointerStyle
   visible: boolean
   animStartTime: number
+  // Animated style state
+  animatedProgress: number     // 0-1 for animated entrance
+  animatedStartTime: number    // When animation started
+  wigglePhase: number          // For wiggle animation
+  drawProgress: number         // For sketch drawing animation
 }
 
 export function useVideoRenderer() {
@@ -198,7 +205,11 @@ export function useVideoRenderer() {
         targetY: 50,
         style: 'laser',
         visible: false,
-        animStartTime: 0
+        animStartTime: 0,
+        animatedProgress: 0,
+        animatedStartTime: 0,
+        wigglePhase: 0,
+        drawProgress: 0
       }
       const POINTER_TRANSITION_MS = 300
 
@@ -256,24 +267,48 @@ export function useVideoRenderer() {
           )
 
           if (pointerInfo && pointerInfo.visible) {
-            // Update pointer target
-            if (pointerState.targetX !== pointerInfo.x || pointerState.targetY !== pointerInfo.y) {
+            // Check if position or style changed
+            const positionChanged = pointerState.targetX !== pointerInfo.x || pointerState.targetY !== pointerInfo.y
+            const styleChanged = pointerState.style !== pointerInfo.style
+
+            if (positionChanged || styleChanged) {
               pointerState.animStartTime = elapsedTime
               pointerState.targetX = pointerInfo.x
               pointerState.targetY = pointerInfo.y
+
+              // Reset animated style state when marker changes
+              if (styleChanged || positionChanged) {
+                pointerState.animatedStartTime = elapsedTime
+                pointerState.animatedProgress = 0
+                pointerState.drawProgress = 0
+                pointerState.wigglePhase = 0
+              }
             }
             pointerState.style = pointerInfo.style
             pointerState.visible = true
 
-            // Smooth interpolation
+            // Smooth interpolation for position
             const animProgress = Math.min(1, (elapsedTime - pointerState.animStartTime) * 1000 / POINTER_TRANSITION_MS)
             const easeProgress = easeOutCubic(animProgress)
 
             pointerState.currentX += (pointerState.targetX - pointerState.currentX) * easeProgress
             pointerState.currentY += (pointerState.targetY - pointerState.currentY) * easeProgress
 
+            // Update animated style progress
+            if (isAnimatedStyle(pointerState.style)) {
+              const config = ANIMATED_STYLE_CONFIG[pointerState.style as AnimatedPointerStyle]
+              const animElapsed = (elapsedTime - pointerState.animatedStartTime) * 1000
+              pointerState.animatedProgress = Math.min(1, animElapsed / config.duration)
+              pointerState.drawProgress = pointerState.animatedProgress
+
+              // Update wiggle phase for wiggle style
+              if (pointerState.style === 'wiggle') {
+                pointerState.wigglePhase = pointerState.animatedProgress * Math.PI * 6
+              }
+            }
+
             // Draw pointer
-            drawPointer(ctx, pointerState.currentX, pointerState.currentY, pointerState.style, width, height)
+            drawPointer(ctx, canvas, pointerState, width, height)
           } else if (pointerInfo && !pointerInfo.visible) {
             pointerState.visible = false
           }
@@ -367,20 +402,28 @@ export function useVideoRenderer() {
 
   function drawPointer(
     ctx: CanvasRenderingContext2D,
-    xPercent: number,
-    yPercent: number,
-    style: PointerStyle,
+    canvas: HTMLCanvasElement,
+    state: PointerAnimState,
     canvasWidth: number,
     canvasHeight: number
   ) {
-    const x = (xPercent / 100) * canvasWidth
-    const y = (yPercent / 100) * canvasHeight
+    const x = (state.currentX / 100) * canvasWidth
+    const y = (state.currentY / 100) * canvasHeight
     const baseSize = Math.min(canvasWidth, canvasHeight) * 0.02
+    const style = state.style
 
     ctx.save()
 
+    // Handle animated styles
+    if (isAnimatedStyle(style)) {
+      drawAnimatedPointerStyle(ctx, canvas, x, y, style as AnimatedPointerStyle, baseSize, state)
+      ctx.restore()
+      return
+    }
+
+    // Basic styles
     switch (style) {
-      case 'laser':
+      case 'laser': {
         // Red laser dot with glow
         const gradient = ctx.createRadialGradient(x, y, 0, x, y, baseSize * 2)
         gradient.addColorStop(0, 'rgba(255, 50, 50, 1)')
@@ -399,6 +442,7 @@ export function useVideoRenderer() {
         ctx.fillStyle = '#ffffff'
         ctx.fill()
         break
+      }
 
       case 'circle':
         // Pulsing circle outline
@@ -467,6 +511,188 @@ export function useVideoRenderer() {
     }
 
     ctx.restore()
+  }
+
+  /**
+   * Draw animated pointer styles (GSAP-inspired easing + Rough.js for sketchy effects)
+   */
+  function drawAnimatedPointerStyle(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    x: number,
+    y: number,
+    style: AnimatedPointerStyle,
+    baseSize: number,
+    state: PointerAnimState
+  ) {
+    const progress = state.animatedProgress
+
+    // Apply entrance animation scale
+    let scale = 1
+    let opacity = 1
+    let offsetX = 0
+    let rotation = 0
+
+    switch (style) {
+      case 'bouncy': {
+        // Bouncy entrance with elastic easing
+        if (progress < 1) {
+          // Elastic out easing
+          const p = progress
+          scale = p === 0 ? 0 : p === 1 ? 1 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * (2 * Math.PI / 3)) + 1
+          opacity = Math.min(1, progress * 2)
+        }
+
+        ctx.globalAlpha = opacity
+        ctx.translate(x, y)
+        ctx.scale(scale, scale)
+        ctx.translate(-x, -y)
+
+        // Cartoon hand with bounce
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(x + baseSize * 0.8, y + baseSize * 2)
+        ctx.lineTo(x + baseSize * 1.8, y + baseSize * 2.2)
+        ctx.quadraticCurveTo(x + baseSize * 2.2, y + baseSize * 3, x + baseSize * 1.5, y + baseSize * 3.5)
+        ctx.lineTo(x + baseSize * 0.3, y + baseSize * 3.5)
+        ctx.quadraticCurveTo(x - baseSize * 0.3, y + baseSize * 3, x - baseSize * 0.5, y + baseSize * 2.5)
+        ctx.lineTo(x - baseSize * 0.3, y + baseSize * 2)
+        ctx.closePath()
+
+        ctx.fillStyle = '#fbbf24'
+        ctx.fill()
+        ctx.strokeStyle = '#b45309'
+        ctx.lineWidth = baseSize * 0.12
+        ctx.stroke()
+        break
+      }
+
+      case 'sketch-circle': {
+        // Hand-drawn circle using Rough.js
+        opacity = Math.min(1, progress * 3)
+        ctx.globalAlpha = opacity
+
+        const rc = rough.canvas(canvas)
+        const radius = baseSize * 3
+        const drawRadius = radius * Math.min(1, progress * 1.2)
+
+        // Draw sketchy circle
+        rc.circle(x, y, drawRadius * 2, {
+          stroke: '#3b82f6',
+          strokeWidth: 3,
+          roughness: 2.5 * progress,
+          bowing: 1.5
+        })
+        break
+      }
+
+      case 'sketch-arrow': {
+        // Hand-drawn arrow using Rough.js
+        opacity = Math.min(1, progress * 3)
+        ctx.globalAlpha = opacity
+
+        const rc = rough.canvas(canvas)
+        const arrowLength = baseSize * 4
+        const headSize = baseSize * 1.5
+
+        // Draw shaft
+        const shaftEndY = y + arrowLength * Math.min(1, progress * 1.2)
+        rc.line(x, y, x, shaftEndY, {
+          stroke: '#ef4444',
+          strokeWidth: 3,
+          roughness: 2
+        })
+
+        // Draw arrowhead when mostly complete
+        if (progress > 0.7) {
+          const headProgress = (progress - 0.7) / 0.3
+          rc.line(x, shaftEndY, x - headSize * headProgress, shaftEndY - headSize * headProgress, {
+            stroke: '#ef4444',
+            strokeWidth: 3,
+            roughness: 2
+          })
+          rc.line(x, shaftEndY, x + headSize * headProgress, shaftEndY - headSize * headProgress, {
+            stroke: '#ef4444',
+            strokeWidth: 3,
+            roughness: 2
+          })
+        }
+        break
+      }
+
+      case 'pop': {
+        // Pop-in with overshoot (back.out easing)
+        if (progress < 1) {
+          const c1 = 1.70158
+          const c3 = c1 + 1
+          scale = 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2)
+          opacity = Math.min(1, progress * 2)
+        }
+
+        ctx.globalAlpha = opacity
+        ctx.translate(x, y)
+        ctx.scale(scale, scale)
+        ctx.translate(-x, -y)
+
+        // Glow
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, baseSize * 4)
+        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.8)')
+        gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.3)')
+        gradient.addColorStop(1, 'rgba(139, 92, 246, 0)')
+
+        ctx.beginPath()
+        ctx.arc(x, y, baseSize * 4, 0, Math.PI * 2)
+        ctx.fillStyle = gradient
+        ctx.fill()
+
+        // Inner circle
+        ctx.beginPath()
+        ctx.arc(x, y, baseSize * 1.5, 0, Math.PI * 2)
+        ctx.fillStyle = '#8b5cf6'
+        ctx.fill()
+
+        // Highlight
+        ctx.beginPath()
+        ctx.arc(x - baseSize * 0.3, y - baseSize * 0.3, baseSize * 0.4, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
+        ctx.fill()
+        break
+      }
+
+      case 'wiggle': {
+        // Wiggle/shake effect
+        offsetX = Math.sin(state.wigglePhase) * 8
+        rotation = Math.sin(state.wigglePhase) * 0.15
+
+        ctx.translate(x + offsetX, y)
+        ctx.rotate(rotation)
+        ctx.translate(-(x + offsetX), -y)
+
+        const drawX = x + offsetX
+        const size = baseSize * 2
+
+        // Outer ring with glow
+        ctx.beginPath()
+        ctx.arc(drawX, y, size * 2, 0, Math.PI * 2)
+        ctx.strokeStyle = '#f59e0b'
+        ctx.lineWidth = size * 0.3
+        ctx.stroke()
+
+        // Inner fill
+        ctx.beginPath()
+        ctx.arc(drawX, y, size, 0, Math.PI * 2)
+        ctx.fillStyle = '#fbbf24'
+        ctx.fill()
+
+        // Exclamation mark
+        ctx.fillStyle = '#78350f'
+        ctx.font = `bold ${size * 1.5}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('!', drawX, y)
+        break
+      }
+    }
   }
 
   /**

@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import type { Slide, PointerStyle, WordTiming } from '@/types'
+import { isAnimatedStyle } from '@/types/pointer'
 import { parsePointerMarkers, calculateMarkerTimings, getPointerStateAtTime } from '@/utils/pointerParser'
 import { blobStorage } from '@/services/blobStorage'
+import {
+  startPointerAnimation,
+  stopPointerAnimation,
+  drawAnimatedPointer,
+  cleanupAllAnimations
+} from '@/utils/animatedPointer'
 
 interface PlaybackState {
   currentTime: number
@@ -34,7 +41,9 @@ const pointerState = ref({
   currentY: 50,
   targetX: 50,
   targetY: 50,
-  animStartTime: 0
+  animStartTime: 0,
+  currentStyle: 'laser' as PointerStyle,
+  animatedPointerId: `preview-${Date.now()}`
 })
 const POINTER_TRANSITION_MS = 300
 
@@ -171,10 +180,26 @@ function drawPointer() {
     const pointer = currentPointer.value
     const now = performance.now()
 
-    if (pointerState.value.targetX !== pointer.x || pointerState.value.targetY !== pointer.y) {
+    // Check if style or position changed (trigger animation for animated styles)
+    const styleChanged = pointerState.value.currentStyle !== pointer.style
+    const positionChanged = pointerState.value.targetX !== pointer.x || pointerState.value.targetY !== pointer.y
+
+    if (positionChanged || styleChanged) {
       pointerState.value.animStartTime = now
       pointerState.value.targetX = pointer.x
       pointerState.value.targetY = pointer.y
+
+      // Start animation for animated styles
+      if (isAnimatedStyle(pointer.style) && (styleChanged || positionChanged)) {
+        pointerState.value.currentStyle = pointer.style
+        startPointerAnimation(
+          pointerState.value.animatedPointerId,
+          pointer.style,
+          () => drawPointer()
+        )
+      } else {
+        pointerState.value.currentStyle = pointer.style
+      }
     }
 
     const elapsed = now - pointerState.value.animStartTime
@@ -190,7 +215,22 @@ function drawPointer() {
     const baseSize = Math.min(canvas.width, canvas.height) * 0.025
 
     ctx.save()
-    drawPointerStyle(ctx, x, y, pointer.style, baseSize, canvas.width, canvas.height)
+
+    // Use animated or basic pointer renderer based on style
+    if (isAnimatedStyle(pointer.style)) {
+      drawAnimatedPointer(
+        ctx,
+        canvas,
+        x,
+        y,
+        pointer.style,
+        baseSize,
+        pointerState.value.animatedPointerId
+      )
+    } else {
+      drawPointerStyle(ctx, x, y, pointer.style, baseSize, canvas.width, canvas.height)
+    }
+
     ctx.restore()
   }
 
@@ -313,12 +353,20 @@ watch(() => props.slide.imageUrl, () => {
 
 // Reset pointer state and load subtitle timings when slide changes
 watch(() => props.slide.id, () => {
+  // Stop any active animations
+  stopPointerAnimation(pointerState.value.animatedPointerId)
+
+  // Create new pointer ID for this slide
+  const newPointerId = `preview-${props.slide.id}-${Date.now()}`
+
   pointerState.value = {
     currentX: 50,
     currentY: 50,
     targetX: 50,
     targetY: 50,
-    animStartTime: 0
+    animStartTime: 0,
+    currentStyle: 'laser',
+    animatedPointerId: newPointerId
   }
   // Load subtitle timings for the new slide
   if (props.slide.audioGenerated) {
@@ -350,6 +398,8 @@ onUnmounted(() => {
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId)
   }
+  // Clean up animated pointer
+  stopPointerAnimation(pointerState.value.animatedPointerId)
 })
 </script>
 
